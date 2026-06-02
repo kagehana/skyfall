@@ -6,22 +6,24 @@ A `LuaCombatant` is someone in the fight that's actually running — a different
 local client = clients()[1]
 
 for _, e in ipairs(client:enemies()) do
-    print(e:name(), e:health() .. "/" .. e:max_health(), e:school())
+    print(e:name(), e:health() .. '/' .. e:max_health(), e:school())
 end
 
 local me = client:allies()[1]
-print("pips:", me:pips(), "power:", me:power_pips())
+print('pips:', me:pips(), 'power:', me:power_pips())
 ```
 
 Mostly you'll use these to size up a fight and pick a playstyle, or to check on something mid-battle:
 
 ```lua
 local boss = nil
+
 for _, e in ipairs(client:enemies()) do
     if e:is_boss() then boss = e end
 end
+
 if boss and boss:health() > 50000 then
-    client:load_playstyle("Feint @ enemy | Scarecrow[Colossal] @ enemy | pass")
+    client:load_playstyle('Feint @ enemy | Scarecrow[Colossal] @ enemy | pass')
 end
 ```
 

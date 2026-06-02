@@ -20,9 +20,9 @@ Everything here works in any script — no client needed, no `client:` in front.
 ### `json`
 
 ```lua
-local s = json.encode({ a = 1, b = {2, 3} })   -- compact
-local pretty = json.encode(t, true)            -- indented
-local t = json.decode('{"hp": 100}')
+local s      = json.encode({ a = 1, b = {2, 3} }) -- compact
+local pretty = json.encode(t, true)               -- indented
+local t      = json.decode('{'hp': 100}')
 ```
 
 ### `clock` / `sleep`
@@ -31,8 +31,10 @@ local t = json.decode('{"hp": 100}')
 
 ```lua
 local t0 = clock()
+
 client:waitfor_battle_finish()
-print(string.format("fight took %.1fs", clock() - t0))
+
+print(string.format('fight took %.1fs', clock() - t0))
 ```
 
 ## `sky.*` recipes
@@ -59,17 +61,18 @@ print(string.format("fight took %.1fs", clock() - t0))
 
 ```lua
 -- retry a flaky action up to 5 times
-sky.retry(5, function() client:friend_tp("Alric") end)
+sky.retry(5, function() client:friend_tp('Alric') end)
 
 -- poll until a condition holds, capped at 40 iterations
-sky.repeat_until(function() return client:in_zone("Triton Avenue") end,
-                 { max = 40, sleep = 0.5 })
+sky.repeat_until(function()
+    return client:in_zone('Triton Avenue')
+end, { max = 40, sleep = 0.5 })
 
 -- run the same routine on every client
 sky.each(clients(), function(c) c:use_potion() end)
 
 -- send a key to all clients at once
-sky.mass_key(clients(), "W")
+sky.mass_key(clients(), 'W')
 ```
 
 ---

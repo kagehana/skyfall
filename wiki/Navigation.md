@@ -14,8 +14,8 @@ SkyFall finds its own way around using zone data it ships with — it doesn't le
 ```lua
 local client = clients()[1]
 
-client:tp_to_quest()                       -- jump to wherever the quest points
-client:follow_path({ {0, 0, 0}, {500, 120, 0} })   -- points are {x, y, z}
+client:tp_to_quest()                             -- jump to wherever the quest points
+client:follow_path({ {0, 0, 0}, {500, 120, 0} }) -- points are {x, y, z}
 ```
 
 ## Getting to another zone
@@ -23,21 +23,22 @@ client:follow_path({ {0, 0, 0}, {500, 120, 0} })   -- points are {x, y, z}
 `to_zone` does the heavy lifting — it works out a route across the worlds (gates, world hops, the teleporter NPCs) and takes you there:
 
 ```lua
-client:to_zone("WizardCity/WC_Hub")
-client:waitfor_zone("WC_Hub")
+client:to_zone('WizardCity/WC_Hub')
+client:waitfor_zone('WC_Hub')
 ```
 
 Zone names are the full path, like `WizardCity/WC_Hub`. `waitfor_zone` just needs enough of the name to match.
 
 ## Gates
 
-A gate is any doorway between zones — a dungeon entrance, a sigil, a transition. List what's around you, then walk through one by name (it matches on a substring):
+A gate is any doorway between zones. A dungeon entrance, a sigil, a transition. List what's around you, then walk through one by name (it matches on a substring):
 
 ```lua
-for _, g in ipairs(client:list_gates()) do print(g) end
+for _, g in ipairs(client:list_gates()) do
+    print(g)
+end
 
-client:go_through_gate("Dungeon")
-client:exit_dungeon()              -- same as go_through_gate("Start")
+client:go_through_gate('Austrilund')
 ```
 
 ## Realms
@@ -63,14 +64,14 @@ Reagents are awkward: they don't sit at fixed coordinates — they spawn at rand
 -- grab whatever's up right now
 for _, r in ipairs(client:reagents_present(800)) do
     client:teleport(r.x, r.y, r.z)
-    client:send_key("X")
+    client:send_key('X')
 end
 
 -- or just let it run: 50 Black Lotus across these zones, hopping realms
 client:farm_reagent{
-    name      = "Black Lotus",
+    name      = 'Black Lotus',
     amount    = 50,
-    zones     = { "Austrilund", "Nordrilund", "Vestrilund" },
+    zones     = { 'Austrilund', 'Nordrilund', 'Vestrilund' },
     hop_realms = true,
 }
 ```

@@ -9,16 +9,21 @@ for _, it in ipairs(client:backpack()) do
     print(it:name(), it:school(), it:object_type())
 end
 
-local hat = client:find_equipped("Hat")
-if hat then print(hat:name(), hat:adjective_list()) end
+local hat = client:find_equipped('Hat')
+
+if hat then
+    print(hat:name(), hat:adjective_list())
+end
 ```
 
 If you need a few fields off the same item, `info()` grabs them all in one read instead of one call at a time:
 
 ```lua
-local it = client:find_item("Mega Snack")
+local it = client:find_item('Mega Snack')
+
 if it then
     local i = it:info()
+
     print(i.name, i.template_id, i.description)
 end
 ```

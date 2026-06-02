@@ -71,7 +71,7 @@ any<heal> @ ally
 
 ## Conditions
 
-Gate any line behind `?(...)`. The check is `subject.attr OP value`, where `subject` is `self`, `enemy`, `boss`, or `ally`; `attr` is `health` or `mana`; `OP` is `< <= > >= == !=`; and a trailing `%` means "as a percentage of max."
+Gate any line behind `?(...)`. The check is `subject.attr OP value`, where `subject` is `self`, `enemy`, `boss`, or `ally`; `attr` is `health` or `mana`; `OP` is `< <= > >= == !=`; and a trailing `%` means 'as a percentage of max.'
 
 ```
 ?(self.health < 25%) Satyr @ self |

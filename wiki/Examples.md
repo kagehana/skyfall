@@ -42,14 +42,16 @@ while not client:got_drop(WANT) do
     client:waitfor_freedom()
 
     local boss = client:nearest_boss(2500)
+
     if not boss then
         client:change_realm()              -- empty realm, try another
     else
         if client:health_pct() < 60 and client:has_potion() then
             client:use_potion()
         end
-        
+
         boss:to()                          -- land on it to start the fight
+        
         client:waitfor_battle_start(15)
         client:waitfor_battle_finish()
     end

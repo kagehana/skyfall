@@ -23,12 +23,14 @@ local client = clients()[1]
 
 while true do
     client:waitfor_freedom()
+
     if client:boss_nearby() then
         client:load_playstyle [[
             Feint @ enemy |
             any<damage>[Colossal] @ enemy |
             pass
         ]]
+        
         client:waitfor_battle_finish()
     end
 end

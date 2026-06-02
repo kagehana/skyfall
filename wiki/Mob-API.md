@@ -5,9 +5,9 @@ A `LuaMob` is anything out in the world — an NPC, a monster, a piece of scener
 ```lua
 local client = clients()[1]
 
-local boss  = client:nearest_boss()              -- a LuaMob, or nil
-local npc   = client:find_mob("Eudora Tangletree")
-local elite = client:mobs_by_title("elite")[1]
+local boss  = client:nearest_boss()                -- a LuaMob, or nil
+local npc   = client:find_mob('Eudora Tangletree')
+local elite = client:mobs_by_title('elite')[1]
 ```
 
 Every accessor reads live memory when you call it, so if the thing moves, read it again.
@@ -24,12 +24,12 @@ boss:navigate_to()  -- actually walk over
 
 ## Telling them apart
 
-`template_id` stays the same across sessions, so match on that; `global_id` only lasts the session. `title` is one of `"easy"`, `"normal"`, `"elite"`, `"boss"`, or `"minion"`, and `is_boss()` is the shortcut for the usual case.
+`template_id` stays the same across sessions, so match on that; `global_id` only lasts the session. `title` is one of `'easy'`, `'normal'`, `'elite'`, `'boss'`, or `'minion'`, and `is_boss()` is the shortcut for the usual case.
 
 ```lua
 for _, m in ipairs(client:mobs()) do
     if m:is_boss() then
-        print(m:display_name(), m:school(), "lvl", m:level())
+        print(m:display_name(), m:school(), 'lvl', m:level())
     end
 end
 ```
@@ -78,7 +78,7 @@ The NPC fields — `level`, `school`, `starting_health`, and the rest — come o
 | Method | Signature | Description |
 |---|---|---|
 | `is_boss` | `() -> bool` | True if the template is flagged a boss |
-| `title` | `() -> str` | "easy", "normal", "elite", "boss", or "minion" |
+| `title` | `() -> str` | 'easy', 'normal', 'elite', 'boss', or 'minion' |
 | `level` | `() -> int` | NPC level |
 | `starting_health` | `() -> int` | NPC starting health |
 | `school` | `() -> str` | Primary school of focus |

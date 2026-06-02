@@ -15,8 +15,11 @@ Below is a tour of the parts you'll reach for most, with examples. The full list
 Health, mana, level, and the quick yes/no checks. Percentages run 0–100.
 
 ```lua
-if client:health_pct() < 40 then client:use_potion() end
-print(client:zone(), "lvl", client:level(), "school", client:focus_school())
+if client:health_pct() < 40 then
+    client:use_potion()
+end
+
+print(client:zone(), 'lvl', client:level(), 'school', client:focus_school())
 ```
 
 ## Moving around
@@ -40,9 +43,12 @@ The lookups give you [`LuaMob`](Mob-API) objects (or lists of them), matching na
 
 ```lua
 local boss = client:nearest_boss()
-if boss then boss:near_to() end    -- walk up to it
 
-for _, m in ipairs(client:mobs_by_title("elite")) do
+if boss then
+    boss:near_to()
+end
+
+for _, m in ipairs(client:mobs_by_title('elite')) do
     print(m:name(), m:distance())
 end
 ```
@@ -60,6 +66,7 @@ client:load_playstyle [[
     ?(self.health < 25%) Satyr @ self |
     pass
 ]]
+
 client:waitfor_battle_finish()
 ```
 
@@ -69,16 +76,16 @@ client:waitfor_battle_finish()
 
 ```lua
 client:enable_dialog()
-client:interact()                 -- talk to whatever you're facing
+client:interact()      -- interact/talk with npc
 ```
 
 ## Items, drops, and farming
 
 ```lua
 client:farm_mob{
-    mob_name   = "fortee thief",
-    until_drop = "piercing onyx",
-    playstyle  = "Wobbegong Frenzy[Epic] @ enemy | Wand @ enemy | pass",
+    mob_name   = 'fortee thief',
+    until_drop = 'piercing onyx',
+    playstyle  = 'Wobbegong Frenzy[Epic] @ enemy | Wand @ enemy | pass',
 }
 ```
 
@@ -89,10 +96,12 @@ client:farm_mob{
 The candidate spots come from the zone's own files; what's actually up gets matched by template ID, which holds up where the names don't. `farm_reagent` is the whole sweep-harvest-hop cycle in one call.
 
 ```lua
-for _, r in ipairs(client:reagents_present(800)) do   -- named fields: r.name, r.x, …
+for _, r in ipairs(client:reagents_present(800)) do
+    -- named fields: r.name, r.x, …
     client:teleport(r.x, r.y, r.z)
 end
-client:farm_reagent{ name = "Black Lotus", amount = 50 }   -- just this zone
+
+client:farm_reagent { name = 'Black Lotus', amount = 50 } -- just this zone
 ```
 
 ---
@@ -112,9 +121,8 @@ client:farm_reagent{ name = "Black Lotus", amount = 50 }   -- just this zone
 | `mana_pct` | `() -> float` | Mana as a percentage of max (0–100) |
 | `energy` | `() -> int` | Current energy (used for pet/gardening/fishing) |
 | `level` | `() -> int` | Wizard level |
-| `focus_school` | `() -> str` | Primary magic school name (e.g. "Fire") |
+| `focus_school` | `() -> str` | Primary magic school name (e.g. 'Fire') |
 | `is_full_hp` | `() -> bool` | True when health is at maximum |
-| `in_danger` | `(hp_pct: float = 25.0) -> bool` | True when health is below `hp_pct` (default 25%) |
 
 #### Position & movement
 
@@ -150,7 +158,7 @@ client:farm_reagent{ name = "Black Lotus", amount = 50 }   -- just this zone
 |---|---|---|
 | `list_gates` | `()` | Names of every zone gate/transition reachable here |
 | `go_through_gate` | `(name: str, back_distance: float = 250.0, hold_seconds: float = 4.0, max_dist: float = None) -> bool` | Walk through the gate whose name contains `name` |
-| `exit_dungeon` | `(gate: str = Start) -> bool` | Leave via the named gate (default "Start") — reads as English |
+| `exit_dungeon` | `(gate: str = Start) -> bool` | Leave via the named gate (default 'Start') — reads as English |
 
 #### Waiting & lifecycle
 
@@ -178,7 +186,7 @@ client:farm_reagent{ name = "Black Lotus", amount = 50 }   -- just this zone
 | `entities` | `(max_dist: float = None)` | All world entities in range as `LuaMob` objects |
 | `mobs` | `(max_dist: float = None)` | All combat-capable NPC entities as `LuaMob` objects |
 | `mobs_by_school` | `(school: str, max_dist: float = None)` | Mobs whose primary school contains `school` |
-| `mobs_by_title` | `(title: str, max_dist: float = None)` | Mobs by title ("boss", "elite", "minion", …) |
+| `mobs_by_title` | `(title: str, max_dist: float = None)` | Mobs by title ('boss', 'elite', 'minion', …) |
 | `find_mob` | `(name: str, max_dist: float = None)` | First entity whose name contains `name` (case-insensitive) |
 | `find_mobs` | `(name: str, max_dist: float = None)` | All entities whose name contains `name` |
 | `find_mobs_sorted` | `(name: str, max_dist: float = None)` | Matching entities sorted nearest-first |
