@@ -1,33 +1,30 @@
 # Mob API — `LuaMob`
 
-A `LuaMob` is any **world entity** — NPC, monster, scenery, reagent node, or
-player. You get one from the client lookups:
+A `LuaMob` is anything out in the world — an NPC, a monster, a piece of scenery, a reagent node, another player. The client lookups hand them to you:
 
 ```lua
 local client = clients()[1]
 
-local boss  = client:nearest_boss()              -- LuaMob or nil
+local boss  = client:nearest_boss()              -- a LuaMob, or nil
 local npc   = client:find_mob("Eudora Tangletree")
 local elite = client:mobs_by_title("elite")[1]
 ```
 
-All accessors read live memory each call, so re-read after the entity moves.
+Every accessor reads live memory when you call it, so if the thing moves, read it again.
 
-## Moving to a mob
+## Getting to one
 
-Three ways to close distance, in increasing safety:
+Three ways to close the gap, from blunt to careful:
 
 ```lua
-boss:to()           -- teleport directly onto it
-boss:near_to()      -- teleport to a walkable point nearby (won't overlap)
-boss:navigate_to()  -- pathfind-walk to it
+boss:to()           -- teleport right onto it
+boss:near_to()      -- teleport next to it, not inside it
+boss:navigate_to()  -- actually walk over
 ```
 
-## Identifying mobs
+## Telling them apart
 
-`template_id` is stable across sessions (match on it); `global_id` is
-per-session. `title` returns `"easy"`, `"normal"`, `"elite"`, `"boss"`, or
-`"minion"`; `is_boss()` is the boss shortcut.
+`template_id` stays the same across sessions, so match on that; `global_id` only lasts the session. `title` is one of `"easy"`, `"normal"`, `"elite"`, `"boss"`, or `"minion"`, and `is_boss()` is the shortcut for the usual case.
 
 ```lua
 for _, m in ipairs(client:mobs()) do
@@ -37,8 +34,7 @@ for _, m in ipairs(client:mobs()) do
 end
 ```
 
-NPC template fields (`level`, `school`, `starting_health`, …) are read from the
-behavior template and fall back to sensible defaults when the entity has none.
+The NPC fields — `level`, `school`, `starting_health`, and the rest — come off the behavior template, and fall back to sensible defaults when an entity doesn't have one.
 
 ---
 

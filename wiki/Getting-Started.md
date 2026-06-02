@@ -1,68 +1,58 @@
 # Getting Started
 
-## The script model
+## How a script runs
 
-A SkyFall bot script is a `.lua` file. The engine runs it on a dedicated thread
-and bridges every game operation so your Lua code reads as **synchronous** —
-there is no `await`, no callbacks. A call like `client:waitfor_battle_finish()`
-simply blocks until the battle is over.
+A script is just a `.lua` file. SkyFall runs it on its own thread and hides all the async plumbing, so you write everything as if it happens top to bottom, one line after the next. No `await`, no callbacks. When you call `client:waitfor_battle_finish()`, the script really does stop on that line until the fight ends, then keeps going.
 
-Scripts can be stopped at any time. Blocking calls (`sleep`, every `waitfor_*`)
-cooperate with the stop signal, so a stopped script unwinds cleanly.
+You can stop a script whenever you want, and the blocking calls — `sleep` and anything that starts with `waitfor_` — know how to drop out cleanly when you do.
 
-## The preamble
+## Start with a client
 
-Any script that calls a method on a client must first grab one:
+Just about everything goes through a client, so the first line of nearly every script is:
 
 ```lua
 local client = clients()[1]
 ```
 
-`clients()` returns the hooked-client list; `[1]` is the primary client. Skip
-the preamble only for scripts that exclusively use globals (`sleep`, `print`,
-`sky.*`) and never touch a `client:` method.
+`clients()` is the list of hooked game windows; `[1]` is your main wizard. Running more than one? They're `[2]`, `[3]`, and so on. The only scripts that skip this line are the ones that never touch a client — pure `print`/`sleep` stuff.
 
-For multiboxing, index further: `clients()[2]`, `clients()[3]`, … or iterate
-with [`sky.multi.each`](Standard-Library).
+## Two kinds of calls
 
-## Globals vs. client methods
-
-Two kinds of calls exist:
-
-- **Globals** — no receiver. `sleep(secs)`, `clock()`, `clients()`, `print(...)`,
-  `json.encode/decode`, and the whole `sky.*` standard library. See the
-  [Standard Library](Standard-Library) page.
-- **Client methods** — `client:method(...)`. These are the bulk of the API and
-  always take the `client:` receiver. See [Client API](Client-API).
+Some things are globals — you call them on their own:
 
 ```lua
-print("starting")              -- global
-sleep(1)                       -- global
-client:send_key("W", 0.5)      -- client method
+sleep(1)
+print("hello")
 ```
+
+Everything else hangs off a client with a colon:
+
+```lua
+client:send_key("W", 0.5)
+client:teleport(x, y, z)
+```
+
+The globals are over on the [Standard Library](Standard-Library) page. The client methods are the whole [Client API](Client-API).
 
 ## Waiting on the game
 
-Prefer the `waitfor_*` family over hand-rolled `sleep` loops — they poll an
-observable signal and respect an optional timeout (`window`, in seconds):
+You'll wait a lot — for a fight to start, a zone to load, a window to pop up. Reach for `waitfor_*` before you reach for `sleep`. Those watch for the real thing and take an optional timeout in seconds:
 
 ```lua
-client:waitfor_freedom()           -- until idle (no load/dialog/combat)
-client:waitfor_battle_start(30)    -- until combat, max 30s
-client:waitfor_window(SOME_PATH)   -- until a UI window appears
+client:waitfor_freedom()         -- until nothing's happening
+client:waitfor_battle_start(30)  -- give it 30 seconds
+client:waitfor_window(path)      -- until a window appears
 ```
 
-When no helper fits, use the polling recipes from the stdlib rather than a raw
-loop:
+A `sleep(2)` is a guess about how long something takes; a `waitfor` actually knows. When nothing fits what you're waiting on, poll for it instead of sleeping blind:
 
 ```lua
 sky.repeat_until(function() return client:in_zone("Triton Avenue") end)
 ```
 
-## UI window paths
+## Clicking around the UI
 
-Window-related methods (`click_window`, `window_text`, `waitfor_window`, …) take
-a **path**: a Lua array of window names from the root down to the target.
+Anything that touches the game's interface — clicking a button, reading a label, waiting on a window — takes a **window path**: a list of window names from the top of the tree down to the one you want.
 
 ```lua
 local DECK = {"WorldView", "DeckConfiguration",
@@ -73,20 +63,20 @@ client:waitfor_window(DECK)
 print(client:window_text(DECK))
 ```
 
-Use `client:dump_windows()` to print the live window tree when you need to find
-a path.
+Don't know the path? `client:dump_windows()` prints the live tree so you can dig it out.
 
-## Linting a script
+## Lint before you run
 
-The bridge ships a linter that flags unknown client methods and `sky.*`
-recipes before you run:
+There's a linter that catches misspelled methods and bad `sky.*` calls before you ever load the thing:
 
 ```
-python -m src.lang.docgen --lint me/bots/questing.lua
+python -m src.lang.docgen --lint me/bots/your_script.lua
 ```
 
 ## Running
 
 ```
-python skyfall.py        # launch the bot UI, load and run scripts there
+python skyfall.py
 ```
+
+Then load and run your scripts from the app.

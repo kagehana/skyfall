@@ -1,7 +1,6 @@
 # Combatant API — `LuaCombatant`
 
-A `LuaCombatant` is a participant in the **active battle** — distinct from a
-[`LuaMob`](Mob-API) (a world entity). You get them from the combat lists:
+A `LuaCombatant` is someone in the fight that's actually running — a different thing from a [`LuaMob`](Mob-API), which is what you see walking around the world. You get them from the combat lists:
 
 ```lua
 local client = clients()[1]
@@ -14,8 +13,7 @@ local me = client:allies()[1]
 print("pips:", me:pips(), "power:", me:power_pips())
 ```
 
-These are most useful for **conditional playstyles** and diagnostics — reading
-HP, pips, school, and status effects to decide what to cast.
+Mostly you'll use these to size up a fight and pick a playstyle, or to check on something mid-battle:
 
 ```lua
 local boss = nil
@@ -27,9 +25,7 @@ if boss and boss:health() > 50000 then
 end
 ```
 
-Most fields beyond vitals/pips (shadow, archmastery, polymorph, round-state
-flags) mirror the raw combat-participant memory and are there for advanced
-scripts; the everyday set is **vitals, pips, school, and the `is_*` checks**.
+There's a long tail of fields here — shadow, archmastery, polymorph, per-round flags — that mirror the raw battle memory for when you genuinely need them. Day to day it's vitals, pips, school, and the `is_*` checks.
 
 ---
 

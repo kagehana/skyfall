@@ -1,7 +1,6 @@
 # Item API — `LuaItem`
 
-A `LuaItem` is a backpack or equipped item. You get them from the inventory
-methods:
+A `LuaItem` is something in your backpack or worn on your wizard. The inventory methods hand them over:
 
 ```lua
 local client = clients()[1]
@@ -14,8 +13,7 @@ local hat = client:find_equipped("Hat")
 if hat then print(hat:name(), hat:adjective_list()) end
 ```
 
-`info()` returns every field in a single memory pass as a table — cheaper than
-calling each accessor separately when you need several fields:
+If you need a few fields off the same item, `info()` grabs them all in one read instead of one call at a time:
 
 ```lua
 local it = client:find_item("Mega Snack")

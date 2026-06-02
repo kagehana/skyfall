@@ -1,6 +1,6 @@
 # Standard Library — globals & `sky.*`
 
-These are available in **every** script without a `client:` receiver.
+Everything here works in any script — no client needed, no `client:` in front.
 
 ## Globals
 
@@ -27,8 +27,7 @@ local t = json.decode('{"hp": 100}')
 
 ### `clock` / `sleep`
 
-`clock()` is a monotonic timer in seconds — use it to measure elapsed time.
-`sleep(secs)` blocks but stays interruptible by the stop signal.
+`clock()` is just a timer in seconds, handy for measuring how long something took. `sleep(secs)` waits, but it still listens for the stop signal so you can cut a script off mid-sleep.
 
 ```lua
 local t0 = clock()
@@ -38,9 +37,7 @@ print(string.format("fight took %.1fs", clock() - t0))
 
 ## `sky.*` recipes
 
-The `sky` table holds pure helpers, flow control, and multi-client
-orchestration — anything that doesn't belong to a single client. Source:
-`src/lang/stdlib.lua` in the repo.
+`sky` is a grab-bag of helpers — retries, polling, looping over several clients — the stuff that doesn't really belong to any one wizard. It's all plain Lua, in `src/lang/stdlib.lua` if you want to read it.
 
 <!-- AUTOGEN:stdlib START — generated from source; do not edit. Run: python -m src.lang.docgen --emit -->
 | Recipe | Description |
@@ -79,18 +76,12 @@ sky.mass_key(clients(), "W")
 
 ## Regenerating the reference tables
 
-Every `<!-- AUTOGEN:… -->` block in this wiki — the method tables on the API
-pages and the two tables above — is generated from source:
+Every `<!-- AUTOGEN:… -->` block in this wiki — the method tables on the API pages, and the two above — is generated from the source code:
 
 ```
 python -m src.lang.docgen --emit
 ```
 
-- **Signatures and the method set** come live from `src/lang/client/` via
-  introspection, so they can't drift.
-- **Descriptions and grouping** live in `src/lang/wiki_meta.py`.
+The signatures and the list of methods are read straight from `src/lang/client/`, so they can't fall out of date. The descriptions and the grouping live in `src/lang/wiki_meta.py`.
 
-Add a method? Add a one-line row to `wiki_meta.py` and re-run `--emit`. A method
-present in source but missing from `wiki_meta.py` shows up under
-*Uncategorized → undocumented*; a stale entry in `wiki_meta.py` prints a
-warning. Prose outside the AUTOGEN blocks is never touched.
+So if you add a method: drop a one-line description in `wiki_meta.py` and run `--emit`. Anything in the source but missing from `wiki_meta.py` lands under *Uncategorized → undocumented*; anything in `wiki_meta.py` that no longer exists prints a warning. The hand-written prose outside the blocks is left alone.

@@ -1,69 +1,57 @@
 # Client API — `LuaClient`
 
-`clients()[1]` returns a `LuaClient`. These methods are the bulk of the
-scripting surface — every call takes the `client:` receiver.
+`clients()[1]` gives you a `LuaClient`, and this is where most of a script lives — every one of these takes the `client:` receiver.
 
 ```lua
 local client = clients()[1]
 ```
 
-Below: curated notes and examples for the common areas, then the **full method
-reference** grouped by category.
+Below is a tour of the parts you'll reach for most, with examples. The full list, grouped by what each method does, is at the bottom.
 
 ---
 
-## State & stats
+## State and stats
 
-Vitals and basic predicates. Percentages are 0–100.
+Health, mana, level, and the quick yes/no checks. Percentages run 0–100.
 
 ```lua
 if client:health_pct() < 40 then client:use_potion() end
 print(client:zone(), "lvl", client:level(), "school", client:focus_school())
 ```
 
-## Movement & position
+## Moving around
 
-`teleport` snaps to an exact coordinate (verified + retried); `navigate`
-pathfinds along the navmesh; `teleport_near` lands on a walkable point *near* a
-target instead of on top of it.
+`teleport` drops you on an exact spot and checks that it took. `navigate` walks there along the navmesh. `teleport_near` puts you beside a target instead of on top of it.
 
 ```lua
 client:navigate(-120, 5400, 0)
 
-local p = client:position()                   -- positional {x,y,z}: p[1],p[2],p[3]
+local p = client:position()        -- {x,y,z} you index: p[1], p[2], p[3]
 client:teleport(p[1], p[2], p[3])
 
-client:tp_to_quest()                          -- walk to the current quest objective
+client:tp_to_quest()               -- straight to the quest objective
 ```
 
-> **Coordinate shapes:** `position()`, `quest_position()`, and mob `location()`
-> return *positional* arrays — index them `[1] [2] [3]`. The reagent and
-> `zone_chunks()` rows are *keyed* — use `.x` / `.y` / `.z` (and `.name`).
+> Worth remembering: `position()`, `quest_position()`, and a mob's `location()` hand back `{x,y,z}` you read by index — `p[1]`, `p[2]`, `p[3]`. The reagent rows and `zone_chunks()` are the other kind, with named fields — `.x` / `.y` / `.z` (and `.name`).
 
-## Entities & mobs
+## Finding things
 
-Lookups return [`LuaMob`](Mob-API) objects (or lists). Names match
-case-insensitively against both the internal and display name.
+The lookups give you [`LuaMob`](Mob-API) objects (or lists of them), matching names case-insensitively against both the internal and the displayed name.
 
 ```lua
 local boss = client:nearest_boss()
-if boss then boss:near_to() end               -- walk up to it
+if boss then boss:near_to() end    -- walk up to it
 
 for _, m in ipairs(client:mobs_by_title("elite")) do
     print(m:name(), m:distance())
 end
 ```
 
-`waitfor_mob` blocks for a *combat* mob; `waitfor_entity` blocks for any world
-entity (NPCs, scenery, players).
+`waitfor_mob` waits for something you can fight; `waitfor_entity` waits for anything at all — NPCs, scenery, other players.
 
-## Combat control
+## Fighting
 
-`load_playstyle` sets the priority list and `enable_combat` hands the fight to
-the native engine; `waitfor_battle_finish` drives it to completion. See
-[Combat Playstyles](Combat-Playstyles) for the DSL. `enemies()`, `allies()`,
-and `combatants()` return [`LuaCombatant`](Combatant-API) objects for
-inspecting the live battle.
+`load_playstyle` sets the plan, `enable_combat` hands the fight to the engine, and `waitfor_battle_finish` waits it out. The playstyle language is its own page: [Combat Playstyles](Combat-Playstyles). To watch a fight while it runs, `enemies()`, `allies()`, and `combatants()` give you [`LuaCombatant`](Combatant-API) objects.
 
 ```lua
 client:load_playstyle [[
@@ -75,18 +63,16 @@ client:load_playstyle [[
 client:waitfor_battle_finish()
 ```
 
-## Dialog & UI
+## Dialog and the UI
 
-`enable_dialog` runs a background watcher that auto-advances dialog; `auto_dialog`
-clicks through a single conversation synchronously. Window methods take a
-[path array](Getting-Started#ui-window-paths).
+`enable_dialog` leaves a watcher running that clicks through dialog for you. `auto_dialog` runs one conversation right now and returns. The window methods take a [path](Getting-Started#clicking-around-the-ui).
 
 ```lua
 client:enable_dialog()
 client:interact()                 -- talk to whatever you're facing
 ```
 
-## Inventory, drops & farming
+## Items, drops, and farming
 
 ```lua
 client:farm_mob{
@@ -96,20 +82,17 @@ client:farm_mob{
 }
 ```
 
-`farm_dungeon` takes the same `playstyle` / `until_drop` / `max_runs` keys plus
-`enter`, `pre_fight`, `exit_gate`, and `on_run_end` callbacks; `kill_boss` takes
-`mob` and `playstyle`. See [Examples](Examples) for full loops.
+`farm_dungeon` takes the same `playstyle` / `until_drop` / `max_runs`, plus `enter`, `pre_fight`, `exit_gate`, and `on_run_end` callbacks. `kill_boss` just wants `mob` and `playstyle`. Full loops live on the [Examples](Examples) page.
 
 ## Reagents
 
-Offline node data comes from the zone WAD; live matching uses template ids
-(reliable, unlike names). `farm_reagent` is the full sweep-harvest-hop loop.
+The candidate spots come from the zone's own files; what's actually up gets matched by template ID, which holds up where the names don't. `farm_reagent` is the whole sweep-harvest-hop cycle in one call.
 
 ```lua
-for _, r in ipairs(client:reagents_present(800)) do   -- keyed rows: r.name, r.x …
+for _, r in ipairs(client:reagents_present(800)) do   -- named fields: r.name, r.x, …
     client:teleport(r.x, r.y, r.z)
 end
-client:farm_reagent{ name = "Black Lotus", amount = 50 }   -- sweep the current zone
+client:farm_reagent{ name = "Black Lotus", amount = 50 }   -- just this zone
 ```
 
 ---

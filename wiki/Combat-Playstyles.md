@@ -1,9 +1,6 @@
 # Combat Playstyles
 
-Combat is driven by a **playstyle**: a pipe-separated priority list you hand to
-`client:load_playstyle(...)`. Each round, the native engine scans the lines
-top-to-bottom and casts the first move it can satisfy with the current hand and
-pips.
+You don't script fights move by move. Instead you hand the combat engine a **playstyle** — a ranked list of what you'd like to do — and every round it goes down the list and casts the first thing it can pull off. You pass it to `client:load_playstyle(...)`.
 
 ```lua
 client:load_playstyle [[
@@ -14,32 +11,31 @@ client:load_playstyle [[
 ]]
 ```
 
-Pass it as a Lua multiline string (`[[ … ]]`). Lines are separated by `|`;
-whitespace and newlines around each line are ignored.
+It's a multiline string (`[[ ... ]]`). Lines are split on `|`, and spacing around each line doesn't matter, so lay it out however reads best.
 
 ## Moves
 
-| Form | Meaning |
+| What you write | What it means |
 |---|---|
-| `SpellName @ target` | Cast a named spell |
-| `SpellName[Enchant] @ target` | Cast with an enchant applied first |
-| `any<req> @ target` | Template — cast any card matching the requirement |
-| `any<req1&req2> @ target` | Template with multiple requirements |
-| `pass` | Skip the turn |
-| `willcast` | Cast the pet's may-cast card |
-| `petcast SpellName @ target` | Queue a specific pet may-cast |
+| `SpellName @ target` | cast a spell by name |
+| `SpellName[Enchant] @ target` | enchant it first, then cast |
+| `any<req> @ target` | cast *any* card that matches the requirement |
+| `any<req1&req2> @ target` | …matching more than one |
+| `pass` | do nothing this turn |
+| `willcast` | let the pet cast its may-cast |
+| `petcast SpellName @ target` | ask the pet for a specific may-cast |
 
-### Chaining with `&`
+### Doing several things in one turn
 
-Cast several spells in one turn, left to right:
+Chain with `&` and they fire left to right:
 
 ```
 Feint @ enemy & Sharpen @ spell(any<blade>) & Storm Lord @ aoe
 ```
 
-### Round-specific moves
+### Pinning a move to a round
 
-Prefix with `{n}` to apply a line only on round *n*:
+Put `{n}` in front and the line only applies on round *n* — handy for opening turns:
 
 ```
 {1} Tower Shield @ self |
@@ -49,23 +45,23 @@ any<damage>[Colossal] @ enemy
 
 ## Targets
 
-| Target | Selects |
+| Target | Who it hits |
 |---|---|
-| `self` | yourself |
-| `enemy` | the default/first enemy |
-| `enemy(N)` | the N-th enemy (1-indexed) |
-| `boss` | the boss in the fight |
+| `self` | you |
+| `enemy` | the first enemy |
+| `enemy(N)` | the Nth enemy (counting from 1) |
+| `boss` | the boss |
 | `ally` | a teammate |
-| `aoe` | all enemies (multi-target) |
-| `enemies` / `allies` | the whole enemy / friendly team |
-| `spell(any<req>)` | a card already in play matching the requirement (e.g. enchant a blade) |
-| `select(...)` | an explicitly selected target |
+| `aoe` | every enemy at once |
+| `enemies` / `allies` | the whole enemy / friendly side |
+| `spell(any<req>)` | a card already on the board — e.g. to enchant a blade you've cast |
+| `select(...)` | a target you've picked explicitly |
 
-## Requirements (for `any<…>` and `spell(any<…>)`)
+## Requirements
 
-`damage`, `heal`, `blade`, `trap`, `ward`, `charm`, `aura`, `global`, `prism`,
-`pierce`, `dispel`, `dot` (`damage_over_time`), `hot` (`heal_over_time`),
-`mod_damage` (a damage enchant), `aoe`, and the compound `damage&aoe`.
+These are what goes inside `any<...>` (and `spell(any<...>)`):
+
+`damage`, `heal`, `blade`, `trap`, `ward`, `charm`, `aura`, `global`, `prism`, `pierce`, `dispel`, `dot`, `hot`, `mod_damage`, `aoe`, and the combined `damage&aoe`.
 
 ```
 any<blade> @ self |
@@ -75,10 +71,7 @@ any<heal> @ ally
 
 ## Conditions
 
-Gate a line with `?(…)`. The expression is `subject.attr OP value`, where
-`subject` is `self`, `enemy`, `boss`, or `ally`; `attr` is `health` or `mana`;
-`OP` is one of `<  <=  >  >=  ==  !=`; and a trailing `%` compares against the
-max (percentage).
+Gate any line behind `?(...)`. The check is `subject.attr OP value`, where `subject` is `self`, `enemy`, `boss`, or `ally`; `attr` is `health` or `mana`; `OP` is `< <= > >= == !=`; and a trailing `%` means "as a percentage of max."
 
 ```
 ?(self.health < 25%) Satyr @ self |
@@ -88,21 +81,18 @@ max (percentage).
 
 ## Free actions
 
-These don't consume the turn — the engine applies them and keeps scanning the
-list. They can be conditional or appear as their own line.
+A few directives don't burn your turn — the engine does them and keeps reading down the list. They can stand on their own line or sit behind a condition.
 
-| Directive | Effect |
+| Directive | What it does |
 |---|---|
-| `focus: <school>` (or `setfocus <school>`) | Swap the focus school mid-fight |
-| `pip: <school>` (or `setpip <school>`) | Assign unspent pips to a school via the pip panel |
-| `draw(n)` | Draw treasure cards |
+| `focus: <school>` (or `setfocus <school>`) | switch your focus school mid-fight |
+| `pip: <school>` (or `setpip <school>`) | spend loose pips into a school via the pip panel |
+| `draw(n)` | draw treasure cards |
 
-A top-level `focus = <school>` / `pip = <school>` line sets the config-wide
-default applied when the playstyle activates.
+A top-level `focus = <school>` or `pip = <school>` sets the default for the whole playstyle when it loads.
 
-## Tips
+## A few habits worth keeping
 
-- End every playstyle with `pass` so the engine always has a legal fallback.
-- Put setup (`Feint`, blades, shields) above your finishers — first match wins.
-- Use [`LuaCombatant`](Combatant-API) reads to pick a playstyle *before* the
-  fight, and `?(…)` conditions to adapt *within* it.
+- End every playstyle with `pass`, so there's always something legal to fall back on.
+- Put setup first — feints, blades, shields — and your finishers lower down. First match wins, so order is your priority.
+- Pick a playstyle *before* the fight using what you can see ([Combatant API](Combatant-API)), and adapt *during* it with `?(...)` conditions.

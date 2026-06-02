@@ -1,9 +1,10 @@
 # Examples
 
-Complete, runnable scripts. Every script that touches a client opens with the
-[preamble](Getting-Started#the-preamble).
+Whole scripts you can read, run, and pull apart. They all open with the [client line](Getting-Started#start-with-a-client).
 
-## Farm a mob until a drop
+## Farm a mob for a drop
+
+Keep fighting one mob until the thing you want drops, then head home.
 
 ```lua
 local client = clients()[1]
@@ -17,7 +18,9 @@ client:farm_mob({
 client:go_to_dorm()
 ```
 
-## Farm a dungeon (sigil entry → fight → reset)
+## Farm a dungeon
+
+Same idea, but for a dungeon: walk in through the sigil, fight to the boss, reset, repeat.
 
 ```lua
 local client = clients()[1]
@@ -27,13 +30,14 @@ client:farm_dungeon({
     playstyle  = "Trap @ boss | Feint Mass @ aoe | Scarecrow[Epic] @ aoe | "
               .. "Headless Horseman[Epic] @ enemy | pass",
 
-    -- waypoint teleport, then the sigil; enter_sigil does tp + key + zone wait
+    -- teleport to the doorway, then the sigil. enter_sigil does the tp,
+    -- the keypress, and the wait for the zone to load.
     enter = function()
         client:teleport(10561.376, -7543.887, 942.539)
         client:enter_sigil(11248.882, -6661.762, 942.669, { settle = 0.8 })
     end,
 
-    -- walk up to the boss before combat begins
+    -- once inside, walk up to the boss before the fight kicks off.
     pre_fight = function()
         client:waitfor_mob("lord groff", 15):to()
     end,
@@ -44,9 +48,9 @@ client:farm_dungeon({
 client:go_to_dorm()
 ```
 
-## Boss-deck swap loop
+## Swap decks for bosses
 
-Detect a boss, swap to a boss deck, arm a heavier playstyle, fight, repeat.
+Watch for a boss, switch to a boss deck and a heavier playstyle, fight, then switch back.
 
 ```lua
 local client = clients()[1]
@@ -66,7 +70,9 @@ while true do
 end
 ```
 
-## Conditional playstyle from live combat state
+## Pick a playstyle from what you see
+
+Look at the enemies before committing, then load the playstyle that fits.
 
 ```lua
 local client = clients()[1]
@@ -90,7 +96,7 @@ end
 client:waitfor_battle_finish()
 ```
 
-## Reagent farm across zones
+## Farm reagents across zones
 
 ```lua
 local client = clients()[1]
@@ -102,11 +108,11 @@ client:farm_reagent{
 }
 ```
 
-## Duo: exclude P2 from questing, arm both sides
+## Two wizards at once
+
+Leave P2 out of questing in the app's settings, then have this script arm each side's combat.
 
 ```lua
--- In Settings → Questing, set "Exclude from Questing" on P2 so P1's Quester
--- ignores it. This script just arms each side's combat.
 local p1, p2 = clients()[1], clients()[2]
 
 p2:load_playstyle [[ pass ]]
@@ -120,12 +126,14 @@ p1:load_playstyle [[
 p1:enable_combat()
 ```
 
-## Multi-client orchestration with `sky`
+## Do something to every client
+
+`sky.each` runs the same thing on each one; `sky.mass_key` sends a key to all of them.
 
 ```lua
 sky.each(clients(), function(c)
     if c:health_pct() < 50 then c:use_potion() end
 end)
 
-sky.mass_key(clients(), "W")   -- everyone walks forward
+sky.mass_key(clients(), "W")   -- everyone forward
 ```
