@@ -7,13 +7,13 @@ If you only want the quick path, three wrappers cover the usual grinds:
 ```lua
 local client = clients()[1]
 
-client:kill_boss{ mob = "Lord Nightshade",
-                  playstyle = "Feint @ boss | any<damage>[Colossal] @ boss | pass" }
+client:kill_boss{ mob = 'Lord Nightshade',
+                  playstyle = 'Feint @ boss | any<damage>[Colossal] @ boss | pass' }
 
-client:farm_mob{ mob_name = "fortee thief", until_drop = "piercing onyx",
-                 playstyle = "Wand @ enemy | pass" }
+client:farm_mob{ mob_name = 'fortee thief', until_drop = 'piercing onyx',
+                 playstyle = 'Wand @ enemy | pass' }
 
-client:farm_dungeon{ until_drop = "goat horns",
+client:farm_dungeon{ until_drop = 'goat horns',
                      enter = function() client:enter_sigil(11248, -6661, 942) end }
 ```
 
@@ -26,7 +26,7 @@ The wrapper above hides the boring parts: what if the boss isn't up, what if you
 ```lua
 local client = clients()[1]
 
-local WANT = "Sky Iron Hasta"
+local WANT = 'Dragoon'   -- any Dragoon piece; got_drop matches a substring
 
 client:load_playstyle [[
     Feint @ boss |
@@ -35,6 +35,7 @@ client:load_playstyle [[
     ?(self.health < 35%) any<heal> @ self |
     pass
 ]]
+
 client:enable_combat()
 
 while not client:got_drop(WANT) do
@@ -47,13 +48,14 @@ while not client:got_drop(WANT) do
         if client:health_pct() < 60 and client:has_potion() then
             client:use_potion()
         end
+        
         boss:to()                          -- land on it to start the fight
         client:waitfor_battle_start(15)
         client:waitfor_battle_finish()
     end
 end
 
-print(WANT .. " dropped — done.")
+print(WANT .. ' dropped — done.')
 client:go_to_dorm()
 ```
 
@@ -96,8 +98,8 @@ local client = clients()[1]
 
 -- Your own webhook (Discord → Server Settings → Integrations → Webhooks).
 -- Treat it like a password; don't paste it into scripts you share.
-local WEBHOOK = "https://discord.com/api/webhooks/XXXXX/YYYYY"
-local WATCH   = { "Amulet of the Sea", "Brilliant Sapphire", "Krokopatra Statue" }
+local WEBHOOK = 'https://discord.com/api/webhooks/XXXXX/YYYYY'
+local WATCH   = { 'Amulet of the Sea', 'Brilliant Sapphire', 'Krokopatra Statue' }
 
 local function ping(text)
     client:http_post(WEBHOOK, json.encode({ content = text }))
@@ -110,7 +112,7 @@ while true do
     for _, item in ipairs(WATCH) do
         if not seen[item] and client:got_drop(item) then
             seen[item] = true
-            ping("Got **" .. item .. "**")
+            ping('Got **' .. item .. '**')
         end
     end
 end
@@ -125,7 +127,7 @@ The trick is using *zone changes* as a heartbeat. Moving means progress; not mov
 ```lua
 local client = clients()[1]
 
-local WEBHOOK     = "https://discord.com/api/webhooks/XXXXX/YYYYY"
+local WEBHOOK     = 'https://discord.com/api/webhooks/XXXXX/YYYYY'
 local STUCK_AFTER = 600          -- seconds in one place before we worry
 
 local zone, since = client:zone(), clock()
@@ -139,7 +141,7 @@ while true do
     if now ~= zone then
         zone, since = now, clock()                       -- moved on, all good
     elseif clock() - since > STUCK_AFTER then
-        client:http_post(WEBHOOK, json.encode({ content = "stuck in " .. zone }))
+        client:http_post(WEBHOOK, json.encode({ content = 'stuck in ' .. zone }))
         since = clock()                                  -- re-arm so it pings once
     end
 
@@ -175,5 +177,5 @@ Anything that drives the game's UI can drop a click once in a while. `sky.retry`
 ```lua
 local client = clients()[1]
 
-sky.retry(4, function() client:equip_deck("Boss") end)
+sky.retry(4, function() client:equip_deck('Boss') end)
 ```
