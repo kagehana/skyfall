@@ -48,7 +48,7 @@ You give it a strategy once, like which blades to stack and what to cast when
 your health drops, and it reads the board every round and plays the cards
 itself. The same engine farms bosses and dungeons for drops while you're away.
 
-And when you want something specific, you write it in Lua. The full bot API is
+And when you want something specific, you write it in Lua. The whole scripting API is
 there as plain commands, so a reagent farm, a four-wizard team, or a custom boss
 rotation is only a few readable lines away.
 

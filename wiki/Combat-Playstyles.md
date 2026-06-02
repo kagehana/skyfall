@@ -11,7 +11,7 @@ client:load_playstyle [[
 ]]
 ```
 
-It's a multiline string (`[[ ... ]]`). Lines are split on `|`, and spacing around each line doesn't matter, so lay it out however reads best.
+Lines split on `|`; whitespace around them is ignored, so format it however reads best.
 
 ## Moves
 
