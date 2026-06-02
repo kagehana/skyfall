@@ -27,7 +27,7 @@ local t = json.decode('{"hp": 100}')
 
 ### `clock` / `sleep`
 
-`clock()` is just a timer in seconds, handy for measuring how long something took. `sleep(secs)` waits, but it still listens for the stop signal so you can cut a script off mid-sleep.
+`clock()` is monotonic seconds, for timing. `sleep` is interruptible — the stop signal cuts it short, so stopping a script never hangs waiting one out.
 
 ```lua
 local t0 = clock()

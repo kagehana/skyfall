@@ -1,82 +1,54 @@
 # Getting Started
 
-## How a script runs
+## The model
 
-A script is just a `.lua` file. SkyFall runs it on its own thread and hides all the async plumbing, so you write everything as if it happens top to bottom, one line after the next. No `await`, no callbacks. When you call `client:waitfor_battle_finish()`, the script really does stop on that line until the fight ends, then keeps going.
+Scripts are `.lua` files. SkyFall runs them on a worker thread and bridges the engine's async API so it reads as synchronous — `client:waitfor_battle_finish()` blocks until the fight is actually over, no coroutines or callbacks on your end. Stopping a script interrupts the blocking calls (`sleep`, the `waitfor_*` family) cleanly.
 
-You can stop a script whenever you want, and the blocking calls — `sleep` and anything that starts with `waitfor_` — know how to drop out cleanly when you do.
-
-## Start with a client
-
-Just about everything goes through a client, so the first line of nearly every script is:
+## The one line you always need
 
 ```lua
 local client = clients()[1]
 ```
 
-`clients()` is the list of hooked game windows; `[1]` is your main wizard. Running more than one? They're `[2]`, `[3]`, and so on. The only scripts that skip this line are the ones that never touch a client — pure `print`/`sleep` stuff.
+`clients()` is the list of hooked game windows; index it for the wizard you want (`[2]`, `[3]`, … to multibox). Globals — `sleep`, `clock`, `print`, `json`, `sky.*` — don't need it; anything `client:` does.
 
-## Two kinds of calls
+## Two shapes of call
 
-Some things are globals — you call them on their own:
+Globals stand alone and live on the [Standard Library](Standard-Library) page. Everything else is a method on a client, which is the whole [Client API](Client-API).
 
-```lua
-sleep(1)
-print("hello")
-```
+## Reach for waitfor, not sleep
 
-Everything else hangs off a client with a colon:
+There's a `waitfor_*` family that blocks on a real signal instead of a guessed duration, each taking an optional timeout in seconds:
 
 ```lua
-client:send_key("W", 0.5)
-client:teleport(x, y, z)
+client:waitfor_freedom()         -- idle: no load, dialog, or combat
+client:waitfor_battle_start(30)  -- give up after 30s
+client:waitfor_window(path)
 ```
 
-The globals are over on the [Standard Library](Standard-Library) page. The client methods are the whole [Client API](Client-API).
-
-## Waiting on the game
-
-You'll wait a lot — for a fight to start, a zone to load, a window to pop up. Reach for `waitfor_*` before you reach for `sleep`. Those watch for the real thing and take an optional timeout in seconds:
-
-```lua
-client:waitfor_freedom()         -- until nothing's happening
-client:waitfor_battle_start(30)  -- give it 30 seconds
-client:waitfor_window(path)      -- until a window appears
-```
-
-A `sleep(2)` is a guess about how long something takes; a `waitfor` actually knows. When nothing fits what you're waiting on, poll for it instead of sleeping blind:
+When nothing fits, poll rather than sleeping blind:
 
 ```lua
 sky.repeat_until(function() return client:in_zone("Triton Avenue") end)
 ```
 
-## Clicking around the UI
+## Window paths
 
-Anything that touches the game's interface — clicking a button, reading a label, waiting on a window — takes a **window path**: a list of window names from the top of the tree down to the one you want.
+The UI calls (`click_window`, `window_text`, `waitfor_window`, …) take a path: window names from the root down to the one you want.
 
 ```lua
 local DECK = {"WorldView", "DeckConfiguration",
               "DeckConfigurationWindow", "ControlSprite",
               "DeckPage", "DeckName"}
 
-client:waitfor_window(DECK)
-print(client:window_text(DECK))
+client:click_window(DECK)
 ```
 
-Don't know the path? `client:dump_windows()` prints the live tree so you can dig it out.
+`client:dump_windows()` prints the live tree when you need to find one.
 
-## Lint before you run
-
-There's a linter that catches misspelled methods and bad `sky.*` calls before you ever load the thing:
+## Lint and run
 
 ```
-python -m src.lang.docgen --lint me/bots/your_script.lua
+python -m src.lang.docgen --lint me/bots/your_script.lua   # flags typo'd methods
+python skyfall.py                                          # run it from the app
 ```
-
-## Running
-
-```
-python skyfall.py
-```
-
-Then load and run your scripts from the app.
