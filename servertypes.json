@@ -1,0 +1,823 @@
+{
+  "class InteractOptionTemplate": {
+    "bases": [
+      "InteractableOption"
+    ],
+    "hash": 255662699,
+    "properties": {
+      "m_bFlag_1554160709": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1554160709,
+        "id": 4,
+        "pointer": false,
+        "singleton": false,
+        "type": "bool"
+      },
+      "m_bFlag_333662217": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 333662217,
+        "id": 2,
+        "pointer": false,
+        "singleton": false,
+        "type": "bool"
+      },
+      "m_bFlag_758563334": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 758563334,
+        "id": 10,
+        "pointer": false,
+        "singleton": false,
+        "type": "bool"
+      },
+      "m_cooldown": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1987750972,
+        "id": 6,
+        "pointer": false,
+        "singleton": false,
+        "type": "float"
+      },
+      "m_displayKey": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 3023276954,
+        "id": 12,
+        "pointer": false,
+        "singleton": false,
+        "type": "std::string"
+      },
+      "m_iconKey": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 2457138637,
+        "id": 13,
+        "pointer": false,
+        "singleton": false,
+        "type": "std::string"
+      },
+      "m_nByte_1986845195": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1986845195,
+        "id": 11,
+        "pointer": false,
+        "singleton": false,
+        "type": "unsigned char"
+      },
+      "m_nByte_2425106259": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 2425106259,
+        "id": 3,
+        "pointer": false,
+        "singleton": false,
+        "type": "unsigned char"
+      },
+      "m_nByte_3350245995": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 3350245995,
+        "id": 5,
+        "pointer": false,
+        "singleton": false,
+        "type": "unsigned char"
+      },
+      "m_nParam_2464085335": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 2464085335,
+        "id": 0,
+        "pointer": false,
+        "singleton": false,
+        "type": "int"
+      },
+      "m_nParam_3393109652": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 3393109652,
+        "id": 1,
+        "pointer": false,
+        "singleton": false,
+        "type": "int"
+      },
+      "m_questEvent": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1788127695,
+        "id": 8,
+        "pointer": false,
+        "singleton": false,
+        "type": "std::string"
+      },
+      "m_questEventList": {
+        "container": "List",
+        "dynamic": true,
+        "flags": 31,
+        "hash": 1521843245,
+        "id": 9,
+        "pointer": false,
+        "singleton": false,
+        "type": "std::string"
+      },
+      "m_unknown3": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 780900737,
+        "id": 7,
+        "pointer": false,
+        "singleton": false,
+        "type": "float"
+      }
+    }
+  },
+  "class InteractableBehaviorTemplate": {
+    "bases": [
+      "BehaviorTemplate"
+    ],
+    "hash": 1120896859,
+    "properties": {
+      "m_bFlag_1326794857": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1326794857,
+        "id": 22,
+        "pointer": false,
+        "singleton": false,
+        "type": "bool"
+      },
+      "m_bFlag_1368791835": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1368791835,
+        "id": 17,
+        "pointer": false,
+        "singleton": false,
+        "type": "bool"
+      },
+      "m_bFlag_1373986355": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1373986355,
+        "id": 20,
+        "pointer": false,
+        "singleton": false,
+        "type": "bool"
+      },
+      "m_bFlag_1870185984": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1870185984,
+        "id": 15,
+        "pointer": false,
+        "singleton": false,
+        "type": "bool"
+      },
+      "m_bFlag_333662217": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 333662217,
+        "id": 6,
+        "pointer": false,
+        "singleton": false,
+        "type": "bool"
+      },
+      "m_bFlag_545250178": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 545250178,
+        "id": 12,
+        "pointer": false,
+        "singleton": false,
+        "type": "bool"
+      },
+      "m_bFlag_667578207": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 667578207,
+        "id": 14,
+        "pointer": false,
+        "singleton": false,
+        "type": "bool"
+      },
+      "m_bFlag_689348312": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 689348312,
+        "id": 19,
+        "pointer": false,
+        "singleton": false,
+        "type": "bool"
+      },
+      "m_bInteractEnabled": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1554160709,
+        "id": 3,
+        "pointer": false,
+        "singleton": false,
+        "type": "bool"
+      },
+      "m_behaviorName": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 3130754092,
+        "id": 0,
+        "pointer": false,
+        "singleton": false,
+        "type": "std::string"
+      },
+      "m_clickToInteractOnly": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1696440536,
+        "id": 18,
+        "pointer": false,
+        "singleton": false,
+        "type": "bool"
+      },
+      "m_cooldown": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1987750972,
+        "id": 4,
+        "pointer": false,
+        "singleton": false,
+        "type": "float"
+      },
+      "m_fMaxDistance": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1259691426,
+        "id": 11,
+        "pointer": false,
+        "singleton": false,
+        "type": "float"
+      },
+      "m_fParam_3379791731": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 3379791731,
+        "id": 21,
+        "pointer": false,
+        "singleton": false,
+        "type": "float"
+      },
+      "m_fParam_625481721": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 625481721,
+        "id": 23,
+        "pointer": false,
+        "singleton": false,
+        "type": "float"
+      },
+      "m_fScale": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 333877299,
+        "id": 13,
+        "pointer": false,
+        "singleton": false,
+        "type": "float"
+      },
+      "m_guiKey": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 2086998490,
+        "id": 9,
+        "pointer": false,
+        "singleton": false,
+        "type": "std::string"
+      },
+      "m_interactIcon": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 2537342194,
+        "id": 2,
+        "pointer": false,
+        "singleton": false,
+        "type": "std::string"
+      },
+      "m_nByte_2425106259": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 2425106259,
+        "id": 7,
+        "pointer": false,
+        "singleton": false,
+        "type": "unsigned char"
+      },
+      "m_nByte_3350245995": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 3350245995,
+        "id": 8,
+        "pointer": false,
+        "singleton": false,
+        "type": "unsigned char"
+      },
+      "m_nParam_1970449907": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1970449907,
+        "id": 16,
+        "pointer": false,
+        "singleton": false,
+        "type": "int"
+      },
+      "m_sParam_1899615415": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1899615415,
+        "id": 10,
+        "pointer": false,
+        "singleton": false,
+        "type": "std::string"
+      },
+      "m_serviceOptionList": {
+        "container": "List",
+        "dynamic": true,
+        "flags": 31,
+        "hash": 504842466,
+        "id": 1,
+        "pointer": true,
+        "singleton": false,
+        "type": "class InteractOptionTemplate"
+      },
+      "m_unknown3": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 780900737,
+        "id": 5,
+        "pointer": false,
+        "singleton": false,
+        "type": "float"
+      }
+    }
+  },
+  "class MobDeckBehaviorTemplate": {
+    "bases": [
+      "BehaviorTemplate"
+    ],
+    "hash": 1451865413,
+    "properties": {
+      "m_behaviorName": {
+        "container": "Static",
+        "dynamic": false,
+        "enum_options": {},
+        "flags": 7,
+        "hash": 3130754092,
+        "id": 0,
+        "offset": 36,
+        "pointer": true,
+        "singleton": false,
+        "type": "std::string"
+      },
+      "m_spellList": {
+        "container": "List",
+        "dynamic": true,
+        "enum_options": {
+          "__BASECLASS": "SpellTemplate"
+        },
+        "flags": 268435463,
+        "hash": 2688422295,
+        "id": 1,
+        "offset": 72,
+        "pointer": true,
+        "singleton": false,
+        "type": "std::string"
+      }
+    }
+  },
+  "class Trigger": {
+    "bases": [
+      "PropertyClass"
+    ],
+    "hash": 109848155,
+    "properties": {
+      "m_cooldown": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 7,
+        "hash": 1987750972,
+        "id": 2,
+        "offset": 84,
+        "pointer": false,
+        "singleton": false,
+        "type": "float"
+      },
+      "m_requirements": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 7,
+        "hash": 2840985510,
+        "id": 9,
+        "offset": 114,
+        "pointer": true,
+        "singleton": false,
+        "type": "class RequirementList*"
+      },
+      "m_results": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 7,
+        "hash": 3776744154,
+        "id": 10,
+        "offset": 122,
+        "pointer": true,
+        "singleton": false,
+        "type": "class ResultList*"
+      },
+      "m_triggerName": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 7,
+        "hash": 3100183568,
+        "id": 0,
+        "offset": 72,
+        "pointer": false,
+        "singleton": false,
+        "type": "std::string"
+      },
+      "m_unknown1": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 7,
+        "hash": 959698484,
+        "id": 1,
+        "offset": 80,
+        "pointer": false,
+        "singleton": false,
+        "type": "int"
+      },
+      "m_unknown3": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 7,
+        "hash": 780900737,
+        "id": 3,
+        "offset": 88,
+        "pointer": false,
+        "singleton": false,
+        "type": "int"
+      },
+      "m_unknown4": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 7,
+        "hash": 847435658,
+        "id": 4,
+        "offset": 92,
+        "pointer": false,
+        "singleton": false,
+        "type": "bool"
+      },
+      "m_unknownInt3": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 7,
+        "hash": 2035196127,
+        "id": 11,
+        "offset": 130,
+        "pointer": false,
+        "singleton": false,
+        "type": "int"
+      },
+      "m_unknownInt4": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 7,
+        "hash": 2172115608,
+        "id": 13,
+        "offset": 138,
+        "pointer": false,
+        "singleton": false,
+        "type": "int"
+      },
+      "m_unknownStrList1": {
+        "container": "List",
+        "dynamic": true,
+        "flags": 7,
+        "hash": 2108726465,
+        "id": 5,
+        "offset": 96,
+        "pointer": false,
+        "singleton": false,
+        "type": "std::string"
+      },
+      "m_unknownStrList2": {
+        "container": "List",
+        "dynamic": true,
+        "flags": 7,
+        "hash": 2814291446,
+        "id": 6,
+        "offset": 104,
+        "pointer": false,
+        "singleton": false,
+        "type": "std::string"
+      },
+      "m_unknownUC1": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 7,
+        "hash": 1654789642,
+        "id": 7,
+        "offset": 112,
+        "pointer": false,
+        "singleton": false,
+        "type": "unsigned char"
+      },
+      "m_unknownUC2": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 7,
+        "hash": 1549045087,
+        "id": 8,
+        "offset": 113,
+        "pointer": false,
+        "singleton": false,
+        "type": "unsigned char"
+      },
+      "m_unknownUC3": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 7,
+        "hash": 2293879431,
+        "id": 12,
+        "offset": 134,
+        "pointer": false,
+        "singleton": false,
+        "type": "unsigned char"
+      }
+    }
+  },
+  "class TriggerList": {
+    "bases": [
+      "PropertyClass"
+    ],
+    "hash": 114994243,
+    "properties": {
+      "m_triggers": {
+        "container": "List",
+        "dynamic": true,
+        "flags": 7,
+        "hash": 1058912100,
+        "id": 0,
+        "offset": 72,
+        "pointer": false,
+        "singleton": false,
+        "type": "class Trigger"
+      }
+    }
+  },
+  "class WizSpawnObjectInfo": {
+    "bases": [
+      "SpawnObjectInfo",
+      "CoreObjectInfo",
+      "PropertyClass"
+    ],
+    "hash": 1839222684,
+    "properties": {
+      "m_bUndetectable": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1907454341,
+        "id": 9,
+        "pointer": false,
+        "singleton": false,
+        "type": "bool"
+      },
+      "m_fParam_1254251407": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1254251407,
+        "id": 17,
+        "pointer": false,
+        "singleton": false,
+        "type": "float"
+      },
+      "m_fScale": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 503137701,
+        "id": 4,
+        "pointer": false,
+        "singleton": false,
+        "type": "float"
+      },
+      "m_globalDynamic": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1951691017,
+        "id": 8,
+        "pointer": false,
+        "singleton": false,
+        "type": "bool"
+      },
+      "m_kStartNodeType": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1545814623,
+        "id": 12,
+        "pointer": false,
+        "singleton": false,
+        "type": "std::string"
+      },
+      "m_loadingType": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 3522422550,
+        "id": 11,
+        "pointer": false,
+        "singleton": false,
+        "type": "std::string"
+      },
+      "m_location": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 2239683611,
+        "id": 2,
+        "pointer": false,
+        "singleton": false,
+        "type": "class Vector3D"
+      },
+      "m_lootTable": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 2539512673,
+        "id": 16,
+        "pointer": false,
+        "singleton": false,
+        "type": "std::string"
+      },
+      "m_nByte_3028959106": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 3028959106,
+        "id": 18,
+        "pointer": false,
+        "singleton": false,
+        "type": "unsigned char"
+      },
+      "m_nObjectID": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 748496927,
+        "id": 1,
+        "pointer": false,
+        "singleton": false,
+        "type": "unsigned int"
+      },
+      "m_nParam_1645979895": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1645979895,
+        "id": 19,
+        "pointer": false,
+        "singleton": false,
+        "type": "int"
+      },
+      "m_orientation": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 2344058766,
+        "id": 3,
+        "pointer": false,
+        "singleton": false,
+        "type": "class Vector3D"
+      },
+      "m_overrideName": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1990707228,
+        "id": 7,
+        "pointer": false,
+        "singleton": false,
+        "type": "std::string"
+      },
+      "m_pathID": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 821494322,
+        "id": 14,
+        "pointer": false,
+        "singleton": false,
+        "type": "gid"
+      },
+      "m_spawnRequirements": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 2309120870,
+        "id": 10,
+        "pointer": true,
+        "singleton": false,
+        "type": "class RequirementList"
+      },
+      "m_startNode": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 1598161889,
+        "id": 13,
+        "pointer": false,
+        "singleton": false,
+        "type": "unsigned int"
+      },
+      "m_startState": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 2166880458,
+        "id": 6,
+        "pointer": false,
+        "singleton": false,
+        "type": "std::string"
+      },
+      "m_templateID.m_full": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 633907631,
+        "id": 0,
+        "pointer": false,
+        "singleton": false,
+        "type": "unsigned __int64"
+      },
+      "m_uniqueLoc": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 400014505,
+        "id": 15,
+        "pointer": false,
+        "singleton": false,
+        "type": "char"
+      },
+      "m_zoneTag": {
+        "container": "Static",
+        "dynamic": false,
+        "flags": 31,
+        "hash": 3405382643,
+        "id": 5,
+        "pointer": false,
+        "singleton": false,
+        "type": "std::string"
+      }
+    }
+  }
+}

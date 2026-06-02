@@ -1,0 +1,103 @@
+name: Release Skyfall
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        id: version
+        shell: bash
+        run: |
+          VERSION_NUMBER=$(grep -oP "tool_version: str = [\"']\K[^\"']+" Skyfall.py | head -1)
+          if [ -z "$VERSION_NUMBER" ]; then
+            echo "ERROR: tool_version not found in Skyfall.py"
+            exit 1
+          fi
+          if ! echo "$VERSION_NUMBER" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$'; then
+            echo "ERROR: invalid version format: $VERSION_NUMBER"
+            exit 1
+          fi
+          echo "VERSION_NUMBER=$VERSION_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "VERSION_TAG=v$VERSION_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "Releasing v$VERSION_NUMBER"
+
+      - name: Check if release already exists
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.version.outputs.VERSION_TAG }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "ERROR: tag $TAG already exists"
+            exit 1
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "ERROR: release $TAG already exists"
+            exit 1
+          fi
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Build
+        run: uv run --group dev pyinstaller --noconfirm --clean Skyfall.spec
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.version.outputs.VERSION_TAG }}"
+          New-Item -ItemType Directory -Path release -Force | Out-Null
+          Copy-Item dist/SkyFall.exe release/
+          Copy-Item LICENSE release/
+          Compress-Archive -Path release/* -DestinationPath "Skyfall-$tag.zip" -Force
+
+      - name: Changelog
+        id: changelog
+        shell: bash
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            BODY=$(git log --pretty=format:"- %s" --no-merges | head -20)
+          else
+            BODY=$(git log "${LAST_TAG}..HEAD" --pretty=format:"- %s" --no-merges)
+          fi
+          [ -z "$BODY" ] && BODY="- Initial release"
+          {
+            echo "CHANGELOG<<EOF"
+            echo "$BODY"
+            echo "EOF"
+            echo "LAST_TAG=$LAST_TAG"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.VERSION_TAG }}
+          name: Skyfall ${{ steps.version.outputs.VERSION_TAG }}
+          body: |
+            ${{ steps.changelog.outputs.CHANGELOG }}
+
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.changelog.outputs.LAST_TAG }}...${{ steps.version.outputs.VERSION_TAG }}
+          files: Skyfall-${{ steps.version.outputs.VERSION_TAG }}.zip
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.VERSION_NUMBER, 'alpha') || contains(steps.version.outputs.VERSION_NUMBER, 'beta') || contains(steps.version.outputs.VERSION_NUMBER, 'rc') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

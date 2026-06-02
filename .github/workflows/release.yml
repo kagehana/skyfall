@@ -1,0 +1,94 @@
+name: Release Skyfall (tag)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.2.0)'
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF##*/}"
+          fi
+          VERSION_NUMBER="${VERSION#v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "VERSION_NUMBER=$VERSION_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Sync version in Skyfall.py
+        shell: bash
+        run: |
+          sed -i "s/tool_version: str = [\"'][^\"']*[\"']/tool_version: str = \"${{ steps.version.outputs.VERSION_NUMBER }}\"/" Skyfall.py
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Build
+        run: uv run --group dev pyinstaller --noconfirm --clean Skyfall.spec
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.version.outputs.VERSION }}"
+          New-Item -ItemType Directory -Path release -Force | Out-Null
+          Copy-Item dist/SkyFall.exe release/
+          Copy-Item LICENSE release/
+          Compress-Archive -Path release/* -DestinationPath "Skyfall-$tag.zip" -Force
+
+      - name: Changelog
+        id: changelog
+        shell: bash
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            BODY=$(git log --pretty=format:"- %s" --no-merges | head -20)
+          else
+            BODY=$(git log "${LAST_TAG}..HEAD" --pretty=format:"- %s" --no-merges)
+          fi
+          [ -z "$BODY" ] && BODY="- Initial release"
+          {
+            echo "CHANGELOG<<EOF"
+            echo "$BODY"
+            echo "EOF"
+            echo "LAST_TAG=$LAST_TAG"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.VERSION }}
+          name: Skyfall ${{ steps.version.outputs.VERSION }}
+          body: |
+            ${{ steps.changelog.outputs.CHANGELOG }}
+
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.changelog.outputs.LAST_TAG }}...${{ steps.version.outputs.VERSION }}
+          files: Skyfall-${{ steps.version.outputs.VERSION }}.zip
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.VERSION, 'alpha') || contains(steps.version.outputs.VERSION, 'beta') || contains(steps.version.outputs.VERSION, 'rc') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

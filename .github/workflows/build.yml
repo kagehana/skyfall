@@ -1,0 +1,48 @@
+name: Build Skyfall (dev artifact)
+
+on:
+  push:
+    branches:
+      - dev-main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        shell: bash
+        run: |
+          VERSION_NUMBER=$(grep -oP "tool_version: str = [\"']\K[^\"']+" Skyfall.py | head -1)
+          echo "VERSION_TAG=v$VERSION_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Build
+        run: uv run --group dev pyinstaller --noconfirm --clean Skyfall.spec
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.version.outputs.VERSION_TAG }}"
+          New-Item -ItemType Directory -Path release -Force | Out-Null
+          Copy-Item dist/SkyFall.exe release/
+          Copy-Item LICENSE release/
+          Compress-Archive -Path release/* -DestinationPath "Skyfall-$tag.zip" -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Skyfall-${{ steps.version.outputs.VERSION_TAG }}
+          path: Skyfall-${{ steps.version.outputs.VERSION_TAG }}.zip
+          retention-days: 90

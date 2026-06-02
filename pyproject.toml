@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "skyfall-wizard101"
+version = "2026.5.27"
+description = "Wizard101 automation engine — Lua-scripted, native combat, native navigation."
+license = "GPL-3.0-only"
+requires-python = ">=3.13"
+dependencies = [
+    "loguru>=0.7.2",
+    "lupa>=2.0",
+    "Pillow>=10.0.0",
+    "pypresence>=4.3.0",
+    "pyperclip>=1.9.0",
+    "PyQt6>=6.6.0",
+    "pywin32>=306; sys_platform == 'win32'",
+    "pyyaml>=6.0.1",
+    "requests>=2.32.3",
+    "thefuzz>=0.22.1",
+    "wizwalker",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.uv.workspace]
+members = ["libs/wizwalker"]
+
+[tool.uv.sources]
+wizwalker = { workspace = true }
+
+[dependency-groups]
+dev = ["pyinstaller>=6.0", "pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+exclude = ["libs/"]
+
+[tool.ruff.lint]
+ignore = ["F403", "F405", "E402", "E741"]
