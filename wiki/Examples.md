@@ -1,139 +1,179 @@
 # Examples
 
-Whole scripts you can read, run, and pull apart. They all open with the [client line](Getting-Started#start-with-a-client).
+Whole scripts, start to finish — read them, run them, take what you need. They all open with the [client line](Getting-Started#start-with-a-client).
 
-## Farm a mob for a drop
-
-Keep fighting one mob until the thing you want drops, then head home.
+If you only want the quick path, three wrappers cover the usual grinds:
 
 ```lua
 local client = clients()[1]
 
-client:farm_mob({
-    mob_name   = "fortee thief",
-    until_drop = "piercing onyx",
-    playstyle  = "Wobbegong Frenzy[Epic] @ enemy | Wand @ enemy | pass",
-})
+client:kill_boss{ mob = "Lord Nightshade",
+                  playstyle = "Feint @ boss | any<damage>[Colossal] @ boss | pass" }
 
-client:go_to_dorm()
+client:farm_mob{ mob_name = "fortee thief", until_drop = "piercing onyx",
+                 playstyle = "Wand @ enemy | pass" }
+
+client:farm_dungeon{ until_drop = "goat horns",
+                     enter = function() client:enter_sigil(11248, -6661, 942) end }
 ```
 
-## Farm a dungeon
+Everything below is the hand-rolled version. More lines, but you can see exactly what's going on and bend it to whatever you're doing.
 
-Same idea, but for a dungeon: walk in through the sigil, fight to the boss, reset, repeat.
+## Camp a boss for a drop
 
-```lua
-local client = clients()[1]
-
-client:farm_dungeon({
-    until_drop = "goat horns",
-    playstyle  = "Trap @ boss | Feint Mass @ aoe | Scarecrow[Epic] @ aoe | "
-              .. "Headless Horseman[Epic] @ enemy | pass",
-
-    -- teleport to the doorway, then the sigil. enter_sigil does the tp,
-    -- the keypress, and the wait for the zone to load.
-    enter = function()
-        client:teleport(10561.376, -7543.887, 942.539)
-        client:enter_sigil(11248.882, -6661.762, 942.669, { settle = 0.8 })
-    end,
-
-    -- once inside, walk up to the boss before the fight kicks off.
-    pre_fight = function()
-        client:waitfor_mob("lord groff", 15):to()
-    end,
-
-    exit_gate = "Start",
-})
-
-client:go_to_dorm()
-```
-
-## Swap decks for bosses
-
-Watch for a boss, switch to a boss deck and a heavier playstyle, fight, then switch back.
+The wrapper above hides the boring parts: what if the boss isn't up, what if you're low on health. Here's the whole thing in the open — fight, hop to a fresh realm when nobody's home, top off between pulls, stop the moment it drops.
 
 ```lua
 local client = clients()[1]
 
-while true do
+local WANT = "Sky Iron Hasta"
+
+client:load_playstyle [[
+    Feint @ boss |
+    any<blade> @ self |
+    any<damage>[Colossal] @ boss |
+    ?(self.health < 35%) any<heal> @ self |
+    pass
+]]
+client:enable_combat()
+
+while not client:got_drop(WANT) do
     client:waitfor_freedom()
-    if client:boss_nearby() then
-        client:equip_deck("Boss")
-        client:load_playstyle [[
-            Feint @ enemy |
-            Feint[Potent] @ enemy |
-            Scarecrow[Colossal] @ aoe |
-            pass
-        ]]
+
+    local boss = client:nearest_boss(2500)
+    if not boss then
+        client:change_realm()              -- empty realm, try another
+    else
+        if client:health_pct() < 60 and client:has_potion() then
+            client:use_potion()
+        end
+        boss:to()                          -- land on it to start the fight
+        client:waitfor_battle_start(15)
         client:waitfor_battle_finish()
     end
 end
+
+print(WANT .. " dropped — done.")
+client:go_to_dorm()
 ```
 
-## Pick a playstyle from what you see
+## Let the fight decide the plan
 
-Look at the enemies before committing, then load the playstyle that fits.
+You don't have to commit to one playstyle. Wait for the battle, look at who's actually in the circle, then load the plan that fits. One boss gets the single-target treatment; a crowd gets AoE.
 
 ```lua
 local client = clients()[1]
 
 client:waitfor_battle_start()
 
-local tanky = false
-for _, e in ipairs(client:enemies()) do
-    if e:is_boss() and e:health() > 100000 then tanky = true end
+local foes, boss = client:enemies(), nil
+for _, e in ipairs(foes) do
+    if e:is_boss() then boss = e end
 end
 
-if tanky then
+if boss then
     client:load_playstyle [[
         Feint @ boss | any<blade> @ self |
-        any<damage>[Colossal] @ boss | pass
+        any<damage>[Colossal] @ boss |
+        ?(self.health < 30%) any<heal> @ self | pass
     ]]
+elseif #foes >= 3 then
+    client:load_playstyle [[ Feint Mass @ aoe | any<damage>[Epic] @ aoe | pass ]]
 else
-    client:load_playstyle [[ any<damage>[Epic] @ aoe | pass ]]
+    client:load_playstyle [[ any<damage>[Epic] @ enemy | pass ]]
 end
 
-client:waitfor_battle_finish()
+client:enable_combat()              -- load first, then arm — enable_combat is
+client:waitfor_battle_finish()      -- what hands the new plan to the engine
 ```
 
-## Farm reagents across zones
+## Ping you when something good drops
+
+Run this next to whatever's doing the fighting. It checks the drop log after each battle and messages a Discord webhook the first time one of your wanted items shows up — once each, no spam.
 
 ```lua
 local client = clients()[1]
 
-client:farm_reagent{
-    name   = "Black Lotus",
-    amount = 50,
-    zones  = { "Austrilund", "Nordrilund", "Vestrilund" },
-}
+-- Your own webhook (Discord → Server Settings → Integrations → Webhooks).
+-- Treat it like a password; don't paste it into scripts you share.
+local WEBHOOK = "https://discord.com/api/webhooks/XXXXX/YYYYY"
+local WATCH   = { "Amulet of the Sea", "Brilliant Sapphire", "Krokopatra Statue" }
+
+local function ping(text)
+    client:http_post(WEBHOOK, json.encode({ content = text }))
+end
+
+local seen = {}
+while true do
+    client:waitfor_battle_start()
+    client:waitfor_battle_finish()
+    for _, item in ipairs(WATCH) do
+        if not seen[item] and client:got_drop(item) then
+            seen[item] = true
+            ping("Got **" .. item .. "**")
+        end
+    end
+end
 ```
 
-## Two wizards at once
+## Babysit an overnight quester
 
-Leave P2 out of questing in the app's settings, then have this script arm each side's combat.
+The quester is good, but it can get wedged on a bad teleport. This rides along: it keeps your health up, and if the wizard hasn't changed zones in ten minutes — which almost always means it's stuck — it pokes you.
+
+The trick is using *zone changes* as a heartbeat. Moving means progress; not moving for a long time means trouble.
 
 ```lua
-local p1, p2 = clients()[1], clients()[2]
+local client = clients()[1]
 
-p2:load_playstyle [[ pass ]]
-p2:enable_combat()
+local WEBHOOK     = "https://discord.com/api/webhooks/XXXXX/YYYYY"
+local STUCK_AFTER = 600          -- seconds in one place before we worry
 
-p1:load_playstyle [[
-    any<damage>[Epic] @ aoe |
-    any<damage> @ enemy |
-    pass
-]]
-p1:enable_combat()
+local zone, since = client:zone(), clock()
+
+while true do
+    if client:health_pct() < 50 and client:has_potion() then
+        client:use_potion()
+    end
+
+    local now = client:zone()
+    if now ~= zone then
+        zone, since = now, clock()                       -- moved on, all good
+    elseif clock() - since > STUCK_AFTER then
+        client:http_post(WEBHOOK, json.encode({ content = "stuck in " .. zone }))
+        since = clock()                                  -- re-arm so it pings once
+    end
+
+    sleep(15)
+end
 ```
 
-## Do something to every client
+## Run a team off one script
 
-`sky.each` runs the same thing on each one; `sky.mass_key` sends a key to all of them.
+`clients()` is the whole team, and `sky.each` runs the same thing across all of them. Let p1 lead and quest (toggle questing in the app); the rest just need to fight when they get pulled in. Arm everyone once, then keep the group alive in a loop.
 
 ```lua
-sky.each(clients(), function(c)
-    if c:health_pct() < 50 then c:use_potion() end
+local team = clients()
+
+sky.each(team, function(c)
+    c:load_playstyle [[ any<damage>[Epic] @ aoe | any<damage> @ enemy | pass ]]
+    c:enable_combat()
+    c:enable_dialog()
 end)
 
-sky.mass_key(clients(), "W")   -- everyone forward
+while true do
+    sky.each(team, function(c)
+        if c:health_pct() < 45 and c:has_potion() then c:use_potion() end
+    end)
+    sleep(10)
+end
+```
+
+## Shrug off a missed click
+
+Anything that drives the game's UI can drop a click once in a while. `sky.retry` just runs it again if it throws — here, up to four tries to get the deck equipped.
+
+```lua
+local client = clients()[1]
+
+sky.retry(4, function() client:equip_deck("Boss") end)
 ```
