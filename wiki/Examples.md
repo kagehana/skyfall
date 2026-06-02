@@ -21,12 +21,12 @@ Everything below is the hand-rolled version. More lines, but you can see exactly
 
 ## Camp a boss for a drop
 
-The wrapper above hides the boring parts: what if the boss isn't up, what if you're low on health. Here's the whole thing in the open — fight, hop to a fresh realm when nobody's home, top off between pulls, stop the moment it drops.
+The wrapper above hides the boring parts: what if the boss isn't up, what if you're low on health. Here's the whole thing in the open. Fight, go to a fresh realm, top off between pulls, stop the moment it drops.
 
 ```lua
 local client = clients()[1]
 
-local WANT = 'Dragoon'   -- any Dragoon piece; got_drop matches a substring
+local WANT = '<item name>'                 -- got_drop matches a substring
 
 client:load_playstyle [[
     Feint @ boss |
@@ -51,13 +51,14 @@ while not client:got_drop(WANT) do
         end
 
         boss:to()                          -- land on it to start the fight
-        
+
         client:waitfor_battle_start(15)
         client:waitfor_battle_finish()
     end
 end
 
 print(WANT .. ' dropped — done.')
+
 client:go_to_dorm()
 ```
 
@@ -71,6 +72,7 @@ local client = clients()[1]
 client:waitfor_battle_start()
 
 local foes, boss = client:enemies(), nil
+
 for _, e in ipairs(foes) do
     if e:is_boss() then boss = e end
 end
@@ -93,13 +95,11 @@ client:waitfor_battle_finish()      -- what hands the new plan to the engine
 
 ## Ping you when something good drops
 
-Run this next to whatever's doing the fighting. It checks the drop log after each battle and messages a Discord webhook the first time one of your wanted items shows up — once each, no spam.
+Run this next to whatever's doing the fighting. It checks the drop log after each battle and messages a Discord webhook the first time one of your wanted items shows up.
 
 ```lua
-local client = clients()[1]
+local client  = clients()[1]
 
--- Your own webhook (Discord → Server Settings → Integrations → Webhooks).
--- Treat it like a password; don't paste it into scripts you share.
 local WEBHOOK = 'https://discord.com/api/webhooks/XXXXX/YYYYY'
 local WATCH   = { 'Amulet of the Sea', 'Brilliant Sapphire', 'Krokopatra Statue' }
 
@@ -108,13 +108,16 @@ local function ping(text)
 end
 
 local seen = {}
+
 while true do
     client:waitfor_battle_start()
     client:waitfor_battle_finish()
+
     for _, item in ipairs(WATCH) do
         if not seen[item] and client:got_drop(item) then
             seen[item] = true
-            ping('Got **' .. item .. '**')
+
+            ping('got **' .. item .. '**')
         end
     end
 end
@@ -122,15 +125,15 @@ end
 
 ## Babysit an overnight quester
 
-The quester is good, but it can get wedged on a bad teleport. This rides along: it keeps your health up, and if the wizard hasn't changed zones in ten minutes — which almost always means it's stuck — it pokes you.
+The quester is good, but it can get wedged on a bad teleport. This rides along: it keeps your health up, and if the wizard hasn't changed zones in ten minutes, which almost always means it's stuck, it pokes you.
 
-The trick is using *zone changes* as a heartbeat. Moving means progress; not moving for a long time means trouble.
+The trick is using *zone changes* as a heartbeat. Moving means progress; not moving for a long time means an issue.
 
 ```lua
-local client = clients()[1]
+local client      = clients()[1]
 
 local WEBHOOK     = 'https://discord.com/api/webhooks/XXXXX/YYYYY'
-local STUCK_AFTER = 600          -- seconds in one place before we worry
+local STUCK_AFTER = 600
 
 local zone, since = client:zone(), clock()
 
@@ -140,6 +143,7 @@ while true do
     end
 
     local now = client:zone()
+
     if now ~= zone then
         zone, since = now, clock()                       -- moved on, all good
     elseif clock() - since > STUCK_AFTER then
@@ -166,8 +170,11 @@ end)
 
 while true do
     sky.each(team, function(c)
-        if c:health_pct() < 45 and c:has_potion() then c:use_potion() end
+        if c:health_pct() < 45 and c:has_potion() then
+            c:use_potion()
+        end
     end)
+
     sleep(10)
 end
 ```
@@ -179,5 +186,7 @@ Anything that drives the game's UI can drop a click once in a while. `sky.retry`
 ```lua
 local client = clients()[1]
 
-sky.retry(4, function() client:equip_deck('Boss') end)
+sky.retry(4, function()
+    client:equip_deck('Boss')
+end)
 ```
