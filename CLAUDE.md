@@ -31,6 +31,32 @@ test.bat                                # run the test suite (no game needed)
 
 ---
 
+## Releasing (CalVer)
+
+Versions follow **CalVer `YYYY.M.D`** (calendar versioning — year.month.day, no
+zero-padding), e.g. `2026.6.3`. The Windows file resource carries a 4-tuple with a
+trailing `.0` build field, e.g. `2026.6.3.0`.
+
+A release bumps the version in two files, builds the binary, then publishes a GitHub
+release tagged with the bare CalVer string:
+
+1. **Bump the version** (done by hand — there is no release script):
+   - `pyproject.toml` → `version = "YYYY.M.D"`
+   - `version_info.txt` → `filevers`/`prodvers` tuple `(YYYY, M, D, 0)` and the
+     `FileVersion`/`ProductVersion` strings `YYYY.M.D.0`
+2. **Build the binary** (onefile PyInstaller → `dist/SkyFall.exe`):
+   ```
+   uv run --group dev pyinstaller --noconfirm --clean skyfall.spec
+   ```
+   If `uv` is unavailable, run the spec directly: `py -3.13 -m PyInstaller --noconfirm --clean skyfall.spec`
+3. **Commit** the version bump, then **publish** the release — tag and title are the
+   bare CalVer string, the only asset is the raw `dist/SkyFall.exe`:
+   ```
+   gh release create YYYY.M.D dist/SkyFall.exe --title "YYYY.M.D" --generate-notes --notes-start-tag <prev-tag>
+   ```
+
+---
+
 ## Codebase structure
 
 ```
