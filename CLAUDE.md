@@ -22,8 +22,10 @@ Core surfaces:
 
 ```
 python skyfall.py                       # launch the bot UI
-python -m pytest tests/ -v              # run the test suite (no game needed)
+test.bat                                # run the test suite (no game needed)
 ```
+
+`test.bat` runs `py -3.13 -m pytest tests/ -v` and forwards extra args (e.g. `test.bat -k combat`, `test.bat -x`).
 
 **Always run the test suite after making any change.**
 
@@ -260,7 +262,7 @@ To add a new spell type requirement:
 ## Test suite
 
 ```
-python -m pytest tests/ -v
+test.bat
 ```
 
 **Run after every change.** No game needed.
