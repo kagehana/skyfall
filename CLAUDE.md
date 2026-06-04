@@ -307,8 +307,57 @@ Key coverage areas (in `tests/test_skyfall.py`):
 
 ## wizwalker fork
 
-The upstream `wizwalker` package may be missing attributes the engine needs. The custom fork lives at `libs/wizwalker` and is wired up as a `uv` workspace member, so `uv sync` installs it automatically. To force a reinstall:
+The upstream `wizwalker` package may be missing attributes the engine needs. The
+custom fork lives at `libs/wizwalker`. `uv sync` installs it as a workspace member.
+
+**Install it editable so `libs/wizwalker` is the single source of truth** — otherwise
+a stale *copy* lands in site-packages and `py -3.13 skyfall.py` imports that instead of
+your edits (this exact trap cost a whole debug cycle):
 
 ```
-uv pip install --force-reinstall libs/wizwalker
+py -3.13 -m pip install -e libs/wizwalker --no-deps
 ```
+
+Verify with `py -3.13 -c "import wizwalker, os; print(os.path.dirname(wizwalker.__file__))"`
+— it must resolve to `libs/wizwalker/wizwalker`, not site-packages. After editing
+Python you must fully restart SkyFall (Lua hot-reload won't reimport it); the game
+client does **not** need restarting if the patterns still match the running client.
+
+---
+
+## Updating memory offsets / hook patterns after a client patch
+
+When a Wizard101 patch breaks login or hooking, the byte signatures to refresh live in:
+
+- `src/launcher.py` — `_LOGIN_PATTERN` (skyfall-specific auto-login command dispatcher;
+  scanned with `_scan_wild`). **Not present in any wizwalker fork.**
+- `libs/wizwalker/.../memory/handler.py` — `AUTOBOT_PATTERN` + `AUTOBOT_SIZE` (the code
+  cave the hook handler anchors to; fails first, before any individual hook).
+- `libs/wizwalker/.../memory/hooks.py` — `PlayerHook`, `ClientHook`, `RootWindowHook`,
+  `RenderContextHook`, `QuestHook`, `MovementTeleportHook`.
+
+**Source of current patterns:** `LaurenzLikeThat/wizwalker`, default branch `development`
+(a fork of `Deimos-Wizard101/wizwalker`). When given a fork/PR to study:
+
+- **Diff per-symbol, not whole-file.** Our fork has diverged heavily (extra features,
+  hex-case, line-wrapping), so a raw `diff` is mostly noise. Compare the specific
+  `pattern =` / `AUTOBOT_*` / `bytecode_generator` bodies.
+- **Patterns are raw bytestrings fed to a regex engine.** In `rb"\x48\x8B\x01"`, `\x48`
+  is a regex hex escape, `.` matches any one byte, `....` is four wildcard bytes. So a
+  pattern can still *locate* a function even after surrounding bytes shift.
+- **Two failure modes — check both:**
+  1. *Pattern doesn't locate* → `pattern_scan` returns None → clean "Pattern … failed"
+     error. The break is almost always a hardcoded **stack-displacement byte** (e.g.
+     `\x24\x38` → wildcard `\x24.`, or `sub rsp,20` → `sub rsp,30`). Wildcard it.
+  2. *Pattern locates but the client CRASHES on hook* (process dies, then SkyFall says
+     "Client must be running"). The pattern matched but `bytecode_generator` restores a
+     **wrong hardcoded original instruction** — usually a changed **base register**
+     (e.g. RootWindowHook `[r13+D8]` → `[r15+D8]`: ModRM `\x85`/`\x8D` → `\x87`/`\x8F`).
+     Diff the `bytecode_generator` bytes, not just the `pattern =` line.
+- **Verify against LIVE client memory — don't trust the diff alone.** With the client
+  running, read the `WizardGraphicalClient.exe` module (OpenProcess + ReadProcessMemory)
+  and `re.finditer(pattern, data, re.DOTALL)`: the correct pattern matches **exactly
+  once**. For crash-class bugs, also read the original bytes at the hook site and confirm
+  they equal what `bytecode_generator` restores.
+
+After porting, run `test.bat` and bump/build/release per the CalVer section.
