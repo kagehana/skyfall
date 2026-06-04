@@ -513,24 +513,17 @@ def _launch_game(game_path: str, login_server: str) -> None:
 # login injection
 
 # pattern to locate the game's internal command dispatcher
-# matches: mov r9b,1 / xor r8d,r8d / lea rdx,[rbp-59h] / mov rcx,[rip+??]
-_LOGIN_PATTERN = bytes(
-    [
-        0x41,
-        0xB1,
-        0x01,
-        0x45,
-        0x33,
-        0xC0,
-        0x48,
-        0x8D,
-        0x55,
-        0xA7,
-        0x48,
-        0x8B,
-        0x0D,
-    ]
-)
+# matches: mov r9b,1 / xor r8d,r8d / lea rdx,[rbp-XXh] / mov rcx,[rip+??]
+# the lea's stack displacement (index 9) shifts between client builds, so it is
+# wildcarded. Everything after it keeps its position, so the rip-relative
+# `mov rcx` (indices 10-12) and the following `call` stay where the dat/func
+# offset resolution below expects them.
+_LOGIN_PATTERN: list[Optional[int]] = [
+    0x41, 0xB1, 0x01,        # mov r9b, 1
+    0x45, 0x33, 0xC0,        # xor r8d, r8d
+    0x48, 0x8D, 0x55, None,  # lea rdx, [rbp-XXh]   (displacement varies by build)
+    0x48, 0x8B, 0x0D,        # mov rcx, [rip+disp]
+]
 
 # RootWindowHook injection point: 7? | 48 8B 01 | 7? | FF 50 70 84
 _HOOK_PATTERN: list[Optional[int]] = [
@@ -557,11 +550,6 @@ _HOOK_PATTERN: list[Optional[int]] = [
     0x84,
 ]
 _HOOK_INSTR_LEN = 7
-
-
-def _scan_exact(data: bytes, pattern: bytes) -> Optional[int]:
-    idx = data.find(pattern)
-    return idx if idx != -1 else None
 
 
 def _scan_wild(data: bytes, pattern: list) -> Optional[int]:
@@ -771,7 +759,7 @@ def _login_to_instance(hwnd: int, username: str, password: str) -> None:
         mod_base, mod_size = _find_module(pid, "WizardGraphicalClient.exe")
         module_mem = proc.read(mod_base, mod_size)
 
-        login_offset = _scan_exact(module_mem, _LOGIN_PATTERN)
+        login_offset = _scan_wild(module_mem, _LOGIN_PATTERN)
         if login_offset is None:
             raise RuntimeError(
                 "LOGIN_PATTERN not found — game version may have changed"

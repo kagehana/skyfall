@@ -1899,12 +1899,20 @@ class TestLauncherCredentials(unittest.TestCase):
 
 
 class TestLauncherInternals(unittest.TestCase):
-    def test_scan_exact_finds_pattern(self):
-        from src.launcher import _scan_exact
+    def test_login_pattern_tolerates_displacement_shift(self):
+        # Regression: a client patch shifts the dispatcher's stack displacement
+        # (the `lea rdx,[rbp-XX]` byte). The login pattern wildcards that byte
+        # so the scan still locates the function regardless of which value the
+        # build picks.
+        from src.launcher import _LOGIN_PATTERN, _scan_wild
 
-        data = b"\x00\x00\xaa\xbb\xcc\xdd\x00"
-        self.assertEqual(_scan_exact(data, b"\xaa\xbb\xcc\xdd"), 2)
-        self.assertIsNone(_scan_exact(data, b"\xff\xee"))
+        self.assertIsNone(_LOGIN_PATTERN[9])  # displacement is wildcarded
+        concrete = [b if b is not None else 0x00 for b in _LOGIN_PATTERN]
+
+        for disp in (0xA7, 0x9F, 0x7B):
+            body = bytes(concrete[:9]) + bytes([disp]) + bytes(concrete[10:])
+            data = b"\x00\x00\x00" + body + b"\x00\x00"
+            self.assertEqual(_scan_wild(data, _LOGIN_PATTERN), 3)
 
     def test_scan_wild_matches_with_wildcards(self):
         from src.launcher import _scan_wild
