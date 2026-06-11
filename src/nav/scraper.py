@@ -13,7 +13,7 @@ from wizwalker.memory.memory_objects.enums import ObjectType
 # memory layout
 #
 # zone pointer chain:
-#   GameClient base + 0x21348  →  zone*
+#   GameClient base + 0x21368  →  zone*
 #   zone* + 0xD8               →  zone_data*
 #   zone_data is scanned for the trigger-volume std::list head (see below)
 #
@@ -93,7 +93,7 @@ async def _read_zone_data_addr(client: Client) -> int:
     try:
         mem = client.hook_handler
         base = await client.game_client.read_base_address()
-        zone = await mem.read_typed(base + 0x21348, Primitive.uint64)
+        zone = await mem.read_typed(base + 0x21368, Primitive.uint64)
 
         if zone == 0:
             return 0
