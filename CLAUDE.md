@@ -81,6 +81,14 @@ src/
         scraper.py       — WAD scraper for traversal data
         wad_scraper.py   — CLI: scrape teleport/gate data into nav/data/
         data/            — traversal data files (zoneMap.txt, gates_list.txt, etc.)
+    deimos/
+        tokenizer.py     — VENDORED verbatim from Deimos-Wizard101/Deimos-Wizard101
+        types.py           src/deimoslang (AST + enums). Do not hand-edit; re-vendor
+        parser.py          from upstream when the grammar changes.
+        emit.py          — SkyFall-owned back end: walks the parsed Deimos AST and
+                           emits Lua. translate(src)->str is the public entry. Dialect
+                           quirks (e.g. waitforzonechange + zone) live in _preprocess.
+                           Wired into the Scripting tab "Convert Deimos to Lua" button.
     objprop/
         reader.py        — little-endian bit reader for KI's ObjectProperty format
         typelist.py      — wiztype type-list loader (TypeList/TypeDef/Property)

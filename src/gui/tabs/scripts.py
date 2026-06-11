@@ -792,6 +792,28 @@ def build_scripts_tab(ctx):
             except Exception:
                 pass
 
+    def bot_convert():
+        # Translate Deimos DSL (the active tab) into SkyFall Lua and open the
+        # result in a new tab. Errors surface verbatim so the user can fix the
+        # offending source line.
+        from src.deimos import translate, TranslationError
+
+        src = bot_editor.toPlainText()
+        if not src.strip():
+            return
+        try:
+            lua = translate(src)
+        except TranslationError as exc:
+            from PyQt6.QtWidgets import QMessageBox
+
+            QMessageBox.warning(
+                ctx.window, "Convert Deimos to Lua", f"Could not convert:\n\n{exc}"
+            )
+            return
+        title = bot_editor.current_title()
+        base = title[:-4] if title.lower().endswith(".txt") else title
+        bot_editor.new_tab(title=f"{base} (lua)", content=lua)
+
     def run_bot_callback():
         # send the active tab's text + slot_id so the backend keeps each
         # script's bot task independent and addressable
@@ -865,6 +887,9 @@ def build_scripts_tab(ctx):
     bot_page = _make_btn_page(
         [
             bot_recent_btn,
+            ctx.registry.action_icon_btn(
+                ctx.svgs["swap"], "Convert Deimos to Lua", bot_convert
+            ),
             ctx.registry.action_icon_btn(
                 ctx.svgs["import"], ctx.tl("import_bot"), bot_import
             ),
