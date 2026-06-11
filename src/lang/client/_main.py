@@ -212,11 +212,14 @@ async def walk_quest_gate_if_cross_zone(
         return False
 
     try:
-        # one attempt only: if the gate-walk fails, return false so the caller
-        # falls back to a flat teleport instead of burning two more retries.
-        # other callers like client:go_through_gate keep the default 3
+        # give the gate-walk the same escalating retries client:go_through_gate
+        # uses (it's the primitive that actually crosses). a single base-param
+        # attempt fails on most gates, and the caller's only fallback is a flat
+        # teleport onto the helper xyz - which sits in the doorway, leaving the
+        # wizard standing inside the door. let the walk escalate back_distance /
+        # hold_seconds instead of bailing after one try.
         return await walk_through_gate(
-            client, gate["name"], max_dist=GATE_NEAR_HELPER, max_attempts=1
+            client, gate["name"], max_dist=GATE_NEAR_HELPER, max_attempts=3
         )
     except Exception as e:
         logger.warning(

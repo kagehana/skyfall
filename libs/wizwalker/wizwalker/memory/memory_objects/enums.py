@@ -118,6 +118,7 @@ class SpellEffects(Enum):
     swap_charm = 19
     swap_ward = 20
     swap_over_time = 21
+    minion_rank_damage = 22
     modify_incoming_damage = 23
     modify_incoming_damage_flat = 120
     maximum_incoming_damage = 24

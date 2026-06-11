@@ -8,6 +8,7 @@ import struct
 import subprocess
 import sys
 import time
+from collections import Counter
 from pathlib import Path
 from typing import Optional
 
@@ -575,6 +576,53 @@ def _scan_wild(data: bytes, pattern: list) -> Optional[int]:
     return None
 
 
+def _scan_wild_all(data: bytes, pattern: list) -> list[int]:
+    """Like _scan_wild but returns every match offset, not just the first."""
+    plen = len(pattern)
+    end = len(data) - plen
+    first_concrete_idx = next((i for i, p in enumerate(pattern) if p is not None), 0)
+    first_byte = pattern[first_concrete_idx]
+    out: list[int] = []
+    i = 0
+    while i <= end:
+        if data[i + first_concrete_idx] != first_byte:
+            i += 1
+            continue
+        if all(p is None or data[i + j] == p for j, p in enumerate(pattern)):
+            out.append(i)
+        i += 1
+    return out
+
+
+def _resolve_login_dat_func(
+    module_mem: bytes, mod_base: int, offsets: list[int]
+) -> tuple[int, int]:
+    """Resolve the command-manager pointer (`dat`) and executor (`func`).
+
+    _LOGIN_PATTERN is the compiler's generic "dispatch a console command"
+    idiom (`mov r9b,1; xor r8d,r8d; lea rdx,[rbp-X]; mov rcx,[rip+dat];
+    call func`) and is emitted at many call sites — a dozen-plus in current
+    builds. Every *real* command dispatch shares one (manager, executor)
+    pair; the few outliers are unrelated functions that happen to share the
+    prologue bytes. Pick the pair by majority vote so resolution never
+    depends on which match the scan happens to hit first.
+    """
+    votes: Counter[tuple[int, int]] = Counter()
+    for off in offsets:
+        # site must end in `call rel32` (E8) for the disps to line up
+        if module_mem[off + 17] != 0xE8:
+            continue
+        dat_disp = struct.unpack_from("<i", module_mem, off + 13)[0]
+        func_disp = struct.unpack_from("<i", module_mem, off + 18)[0]
+        dat_addr = mod_base + off + 17 + dat_disp
+        func_addr = mod_base + off + 22 + func_disp
+        votes[(dat_addr, func_addr)] += 1
+    if not votes:
+        raise RuntimeError("LOGIN_PATTERN matched but no call-form dispatch site found")
+    (dat_addr, func_addr), _ = votes.most_common(1)[0]
+    return dat_addr, func_addr
+
+
 class _RemoteProcess:
     def __init__(self, pid: int):
         access = (
@@ -759,21 +807,20 @@ def _login_to_instance(hwnd: int, username: str, password: str) -> None:
         mod_base, mod_size = _find_module(pid, "WizardGraphicalClient.exe")
         module_mem = proc.read(mod_base, mod_size)
 
-        login_offset = _scan_wild(module_mem, _LOGIN_PATTERN)
-        if login_offset is None:
+        login_offsets = _scan_wild_all(module_mem, _LOGIN_PATTERN)
+        if not login_offsets:
             raise RuntimeError(
                 "LOGIN_PATTERN not found — game version may have changed"
             )
-        login_addr = mod_base + login_offset
 
-        # resolve `dat` and `func` via RIP-relative offsets
-        #   m+13: 4-byte disp for `mov rcx,[rip+disp]`  → dat  = m+17 + disp
-        #   m+18: 4-byte disp for `call rip+disp`        → func = m+22 + disp
-        t = proc.read(login_addr + 13, 9)
-        dat_disp = struct.unpack_from("<i", t, 0)[0]
-        func_disp = struct.unpack_from("<i", t, 5)[0]
-        dat_addr = login_addr + 17 + dat_disp
-        func_addr = login_addr + 22 + func_disp
+        # the pattern hits every "dispatch console command" call site, so
+        # resolve `dat` (command-manager pointer) and `func` (executor) by
+        # majority vote instead of trusting whichever match comes first.
+        #   site+13: disp for `mov rcx,[rip+disp]`  → dat  = site+17 + disp
+        #   site+18: disp for `call rel32`           → func = site+22 + disp
+        dat_addr, func_addr = _resolve_login_dat_func(
+            module_mem, mod_base, login_offsets
+        )
 
         hook_offset = _scan_wild(module_mem, _HOOK_PATTERN)
         if hook_offset is None:
