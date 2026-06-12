@@ -703,7 +703,7 @@ def build_stats_tab(ctx):
     stats_layout.addSpacing(6)
     stats_layout.addWidget(
         ed.subtitle(
-            "Live combat readout. Cards refresh every second while a fight is active."
+            "Live combat info, updated every second during a fight."
         )
     )
     stats_layout.addSpacing(18)

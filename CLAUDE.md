@@ -156,7 +156,7 @@ local client = clients()[1]
 | `client:teleport(x,y,z)` / `:navigate(x,y,z)` / `:to_zone(name)` | movement |
 | `client:go_through_gate(name, ...)` / `:list_gates()` | gate handling |
 | `client:reagent_nodes(name)` | offline reagent spawn-node `{x,y,z}` list for the current zone (from WAD) |
-| `client:reagent_spawns()` | every reagent in the current zone as flat `{name,x,y,z}` rows |
+| `client:spawn_nodes([needle])` | every spawn node in the current zone from WAD as flat `{name, xyz={x,y,z}}` rows (one row per candidate point); `needle` filters names (substring). Covers reagents, chests (incl. cantrip ritual chests), NPCs |
 | `client:reagents_present([dist])` | live reagents in range as `{name,x,y,z}`, matched by template ID (reliable, unlike name) |
 | `client:farm_reagent{name=,amount=,zones=,hop_realms=}` | full farm loop: sweep node(s) across `zones` in order, harvest, close up to the first zone, hop realm; `name` filters to one reagent, `amount` stops at N collected. Also callable positionally: `farm_reagent([name])` |
 | `client:change_realm()` | hop to a different game realm so depleted spawns repopulate |

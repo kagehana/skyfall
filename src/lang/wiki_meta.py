@@ -151,10 +151,14 @@ DOC: dict[str, list[tuple[str, list[tuple[str, str]]]]] = {
         ]),
         ("Reagents", [
             ("reagent_nodes", "Offline spawn-node `{x,y,z}` list for a reagent in this zone"),
-            ("reagent_spawns", "Every reagent in this zone as `{name,x,y,z}` rows (offline WAD data)"),
+            ("spawn_nodes", "Every spawn node in this zone as flat `{name, xyz={x,y,z}}` rows (offline WAD data; optional name filter)"),
             ("reagents_present", "Live reagents in range as `{name,x,y,z}`, matched by template id"),
             ("reagent_debug", "Log reagent template-id resolution for diagnosing matches"),
             ("farm_reagent", "Full farm loop: sweep nodes across `zones`, harvest, hop realms"),
+        ]),
+        ("Fishing", [
+            ("fish", "Auto-fish until stopped or `amount` catches; `{chest=,school=,rank=,id=,size_min=,size_max=,amount=}`"),
+            ("stop_fishing", "Stop an in-progress fishing session and restore client patches"),
         ]),
         ("Quests", [
             ("current_quest_name", "Name of the active tracked quest"),

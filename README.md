@@ -170,6 +170,14 @@ uv run --group dev pytest -q
 
 ---
 
+## Credits
+
+The native fishing engine (the minigame-stripping memory patches) is a port of
+[**FishyBusiness**](https://github.com/CIick/FishyBusiness) by
+[**CIick**](https://github.com/CIick). Thanks for the original research and implementation.
+
+---
+
 ## License
 
 GPL-3.0-only. See [LICENSE](LICENSE).

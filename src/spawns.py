@@ -112,6 +112,7 @@ class ZoneSpawns:
         self._types = TypeList.open(str(types_path or _TYPES_PATH))
         self._register_wsoi_aliases()
         self._reagent_ids: Optional[dict[str, int]] = None
+        self._template_names: Optional[dict[int, str]] = None
         self._zone_cache: dict[str, dict[int, list[XYZ]]] = {}
 
     def _register_wsoi_aliases(self) -> None:
@@ -208,6 +209,24 @@ class ZoneSpawns:
                 out[name] = pts
         return out
 
+    # every spawn node in a zone as flat (display name, point) rows, named via
+    # the full template manifest. a DYNAMIC_SERVER spawn contributes one row per
+    # node in its "possible list"; a statically placed one a single row. unknown
+    # template ids fall back to #<id>. optional needle filters names (substring)
+    async def spawn_nodes(
+        self, zone: str, needle: Optional[str] = None
+    ) -> list[tuple[str, XYZ]]:
+        names = await self._load_template_names()
+        key = needle.lower() if needle else None
+        rows: list[tuple[str, XYZ]] = []
+        for tid, pts in (await self.zone_spawns(zone)).items():
+            name = names.get(tid, f"#{tid}")
+            if key and key not in name.lower():
+                continue
+            rows.extend((name, p) for p in pts)
+        rows.sort(key=lambda r: r[0].lower())
+        return rows
+
     # manifest parsing (reagent display name -> id)
     async def _load_reagent_ids(self) -> dict[str, int]:
         if self._reagent_ids is not None:
@@ -229,7 +248,10 @@ class ZoneSpawns:
             pass
         return self._reagent_ids
 
-    async def _parse_reagent_manifest(self) -> dict[str, int]:
+    # walk Root/TemplateManifest.xml, yielding (filename, templateID) for every
+    # WizTemplateLocation. shared by the reagent-only index and the full
+    # template-name map below
+    async def _manifest_entries(self) -> list[tuple[str, int]]:
         wad = Wad.from_game_data("Root")
         data = await wad.get_file("TemplateManifest.xml")
         body = data[4:]  # skip BINd
@@ -250,7 +272,7 @@ class ZoneSpawns:
         r.read_bits(32)  # list property hash
         count = r.read_container_length(compact)
 
-        out: dict[str, int] = {}
+        out: list[tuple[str, int]] = []
         for _ in range(count):
             r.read_bits_aligned(32)
             size = r.read_bits(32) - 32
@@ -266,8 +288,28 @@ class ZoneSpawns:
                 elif prop_hash == _TM_ID:
                     mid = r.read_bits_aligned(32)
                 r.skip_bits(prop_size - (before - r.bits_remaining()))
-            if fn and mid is not None and fn.startswith(_REAGENT_PREFIX):
+            if fn and mid is not None:
+                out.append((fn, mid))
+        return out
+
+    async def _parse_reagent_manifest(self) -> dict[str, int]:
+        out: dict[str, int] = {}
+        for fn, mid in await self._manifest_entries():
+            if fn.startswith(_REAGENT_PREFIX):
                 name = fn[len(_REAGENT_PREFIX) :].removesuffix(".xml")
-                out[name] = mid  # original display case; lookups are case-insensitive
+                out[name] = mid  # display case; lookups are case-insensitive
         logger.debug(f"[spawns] indexed {len(out)} reagent nodes from manifest")
         return out
+
+    # templateID -> display name (file basename) for the whole manifest; lets
+    # spawn_nodes label arbitrary entities (chests, NPCs, ...), not just
+    # reagents. kept in-memory only - the full map is ~5 MB, not worth shipping
+    async def _load_template_names(self) -> dict[int, str]:
+        if self._template_names is not None:
+            return self._template_names
+        names: dict[int, str] = {}
+        for fn, mid in await self._manifest_entries():
+            names[mid] = fn.rsplit("/", 1)[-1].removesuffix(".xml")
+        self._template_names = names
+        logger.debug(f"[spawns] indexed {len(names)} template names from manifest")
+        return names

@@ -268,7 +268,7 @@ client:farm_reagent { name = 'Black Lotus', amount = 50 } -- just this zone
 | Method | Signature | Description |
 |---|---|---|
 | `reagent_nodes` | `(name: str)` | Offline spawn-node `{x,y,z}` list for a reagent in this zone |
-| `reagent_spawns` | `()` | Every reagent in this zone as `{name,x,y,z}` rows (offline WAD data) |
+| `spawn_nodes` | `(needle: str = nil)` | Every spawn node in this zone from WAD as flat `{name, xyz={x,y,z}}` rows; `needle` filters names (substring). Covers reagents, chests, NPCs |
 | `reagents_present` | `(max_dist: float = 3000)` | Live reagents in range as `{name,x,y,z}`, matched by template id |
 | `reagent_debug` | `(max_dist: float = 600)` | Log reagent template-id resolution for diagnosing matches |
 | `farm_reagent` | `(name=None, amount=None, zones=None, hop_realms=True)` | Full farm loop: sweep nodes across `zones`, harvest, hop realms |

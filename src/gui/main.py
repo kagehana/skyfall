@@ -57,6 +57,7 @@ from src.gui.popups import (
 
 from src.gui.tabs import (
     build_dev_utils_tab,
+    build_fishing_tab,
     build_hotkeys_tab,
     build_launcher_tab,
     build_scraper_tab,
@@ -645,6 +646,12 @@ def manage_gui(
 
     _add_nav_tab(svgs["gauge"], tl("stats"), stats_tab)
 
+    ctx.current_tab_name = "Fishing"
+
+    fishing_tab = build_fishing_tab(ctx)
+
+    _add_nav_tab(svgs["hook"], "Fishing", fishing_tab)
+
     ctx.current_tab_name = "Scripts"
 
     scripts_tab = build_scripts_tab(ctx)
@@ -1205,6 +1212,8 @@ def manage_gui(
     # alongside that UI
     _ingest_combat_snapshot = stats.get("ingest_snapshot", lambda s: None)
 
+    _ingest_fishing = ctx.exports.get("fishing", {}).get("ingest", lambda s: None)
+
     _populate_account_list = launcher.get("populate_account_list", lambda v: None)
 
     _rebuild_hooked_clients_list = launcher.get(
@@ -1261,6 +1270,9 @@ def manage_gui(
 
                         elif tag == "live_combat":
                             _ingest_combat_snapshot(value)
+
+                        elif tag == "fishing":
+                            _ingest_fishing(value)
 
                         elif tag == "FlythroughStatus":
                             flythrough_exports.get("set_running", lambda v: None)(

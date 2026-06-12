@@ -1569,18 +1569,23 @@ class LuaClient:
 
         return self._table(self._call(_()))
 
-    def reagent_spawns(self):
-
+    def spawn_nodes(self, needle=None):
+        # every spawn node in the current zone from static WAD data, one row per
+        # candidate point: row.name + row.xyz = {x, y, z}. a DYNAMIC_SERVER spawn
+        # contributes one row per node in its "possible list". optional needle
+        # filters names (substring, case-insensitive). supersedes reagent_spawns.
         async def _():
             zone = await self._c.zone_name()
-            data = await _zone_spawns().reagent_spawns(zone)
-            return [
-                {"name": name, "x": p.x, "y": p.y, "z": p.z}
-                for name, pts in sorted(data.items())
-                for p in pts
-            ]
+            rows = await _zone_spawns().spawn_nodes(zone, needle)
+            return [(name, p.x, p.y, p.z) for name, p in rows]
 
-        return self._table(self._call(_()))
+        tbl = self._table
+        return tbl(
+            [
+                tbl({"name": name, "xyz": tbl([x, y, z])})
+                for name, x, y, z in self._call(_())
+            ]
+        )
 
     def reagents_present(self, max_dist: float = 3000):
 
@@ -3577,6 +3582,36 @@ class LuaClient:
         except (AttributeError, KeyError):
             return default
         return default if v is None else v
+
+    # ── fishing ───────────────────────────────────────────────────────
+    def fish(self, opts=None):
+        """Auto-fish until stopped (or ``amount`` catches). Blocks the script;
+        halting it stops fishing and restores the client patches. Shares the
+        ``_fisher`` handle with the Fishing tab toggle, so only one runs."""
+        from src.fishing import FishConfig, Fisher
+
+        cfg = FishConfig(
+            chest=bool(self._opt(opts, "chest", False)),
+            school=str(self._opt(opts, "school", "Any")),
+            rank=int(self._opt(opts, "rank", 0) or 0),
+            template_id=int(self._opt(opts, "id", 0) or 0),
+            size_min=float(self._opt(opts, "size_min", 0.0) or 0.0),
+            size_max=float(self._opt(opts, "size_max", 999.0) or 999.0),
+            amount=int(self._opt(opts, "amount", 0) or 0),
+        )
+        fisher = Fisher(
+            self._c,
+            cfg,
+            on_stats=lambda s: _push_gui_status("fishing", s),
+            should_stop=lambda: self._stop.is_set(),
+        )
+        self._c._fisher = fisher
+        return self._call(fisher.run())
+
+    def stop_fishing(self):
+        fisher = getattr(self._c, "_fisher", None)
+        if fisher is not None:
+            fisher.stop()
 
     def _sleep_interruptible(self, secs: float):
         import time as _t

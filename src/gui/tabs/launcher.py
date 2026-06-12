@@ -50,7 +50,7 @@ def build_launcher_tab(ctx):
     launcher_layout.addSpacing(6)
 
     _subtitle = ed.subtitle(
-        "Saved accounts and hooked clients — drag to reorder, check to launch."
+        "Your accounts and hooked clients. Drag to reorder, check to launch."
     )
 
     launcher_layout.addWidget(_subtitle)

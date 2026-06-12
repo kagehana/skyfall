@@ -31,7 +31,7 @@ def build_scraper_tab(ctx) -> QWidget:
     outer.addSpacing(4)
     outer.addWidget(
         ed.subtitle(
-            "Reads zone memory directly. All output streams to the live console."
+            "Pulls zone data from memory. Output shows in the console."
         )
     )
     outer.addSpacing(20)

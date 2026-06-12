@@ -133,7 +133,7 @@ def build_dev_utils_tab(ctx):
 
     outer.addWidget(
         ed.subtitle(
-            "Teleport, navigation, scale, and camera tools. Switch INDIVIDUAL for the active client, ALL CLIENTS to broadcast."
+            "Teleport, navigation, camera, and scale tools."
         )
     )
 

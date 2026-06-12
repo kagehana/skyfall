@@ -56,7 +56,7 @@ Reagents are awkward: they don't sit at fixed coordinates — they spawn at rand
 | Method | What you get |
 |---|---|
 | `client:reagent_nodes(name)` | the possible spots for one reagent, as `{x,y,z}` |
-| `client:reagent_spawns()` | every reagent in the zone, as `{name,x,y,z}` |
+| `client:spawn_nodes([needle])` | every spawn node in the zone as flat `{name, xyz={x,y,z}}` rows (reagents, chests, NPCs); `needle` filters by name |
 | `client:reagents_present([dist])` | what's actually up nearby right now, as `{name,x,y,z}` |
 | `client:farm_reagent{...}` | the whole thing: sweep, harvest, hop realms, repeat |
 

@@ -32,6 +32,7 @@ from src.factory import (
     delegate_combat_configs,
 )
 from src.drops import logging_loop
+from src.fishing import FishConfig, Fisher
 from src.gui import GUIKeys
 from src.inputs import param_input, trunc
 from src.paths import advance_dialog_path, play_button_path
@@ -187,6 +188,12 @@ dialogue_task: asyncio.Task = None
 combat_task: asyncio.Task = None
 tp_task: asyncio.Task = None
 speed_task: asyncio.Task = None
+fishing_task: asyncio.Task = None
+
+# single shared fishing target/profile, edited from the Fishing tab via
+# SetFishConfig and read when fishing starts. the running Fisher holds the same
+# object so chest/school/size edits apply live
+fish_config = FishConfig()
 pet_task: asyncio.Task = None
 
 bot_task: asyncio.Task = None
@@ -681,6 +688,43 @@ async def main():
         auto_potion_status = any(
             getattr(c, "auto_potion_status", False) for c in walker.clients
         )
+
+    def _push_fishing_stats(stats):
+        gui_send_queue.put(
+            sfgui.GUICommand(sfgui.GUICommandType.UpdateWindow, ("fishing", stats))
+        )
+
+    async def toggle_fishing_hotkey(target=None):
+        # fishing is primary-client only: one config, one pond. ignore the
+        # per-client target the toggle framework passes and always drive the
+        # first hooked client.
+        global fishing_task
+
+        if freecam_status or not walker.clients:
+            return
+        client = walker.clients[0]
+        # base the decision on whether a session is actually live (task alive or
+        # a Lua-driven fisher running), not just the status flag - so if the loop
+        # ever ends on its own, one click restarts it instead of toggling a ghost
+        existing = getattr(client, "_fisher", None)
+        running = (fishing_task is not None and not fishing_task.done()) or (
+            existing is not None and existing.stats.get("running")
+        )
+        on = not running
+        client.fishing_status = on
+        _push_toggle_status("FishingStatus", on, client.title)
+
+        if on:
+            fisher = Fisher(
+                client,
+                fish_config,
+                on_stats=_push_fishing_stats,
+                should_stop=lambda: not getattr(client, "fishing_status", False),
+            )
+            client._fisher = fisher
+            fishing_task = asyncio.create_task(fisher.run())
+        elif existing is not None:
+            existing.stop()  # loop exits and restores patches in its finally
 
     def _make_hotkey_callback(action_id):
         async def _callback():
@@ -1358,6 +1402,9 @@ async def main():
             _push_toggle_status(
                 "SpeedhackStatus", getattr(c, "speed_status", False), c.title
             )
+            _push_toggle_status(
+                "FishingStatus", getattr(c, "fishing_status", False), c.title
+            )
 
     def _renumber_clients():
         changed = False
@@ -1379,6 +1426,7 @@ async def main():
         client.auto_potion_status = False
         client.dialogue_status = False
         client.speed_status = False
+        client.fishing_status = False
         client.feeding_pet_status = False
         client.use_team_up = use_team_up
         client.team_up_type = team_up_type
@@ -2234,6 +2282,8 @@ async def main():
                                     await toggle_auto_pet_hotkey(_toggle_target)
                                 case GUIKeys.toggle_auto_potion:
                                     await toggle_auto_potion_hotkey(_toggle_target)
+                                case GUIKeys.toggle_fishing:
+                                    await toggle_fishing_hotkey(_toggle_target)
                                 case GUIKeys.toggle_freecam:
                                     await toggle_freecam_hotkey(target=_toggle_target)
 
@@ -2260,6 +2310,14 @@ async def main():
                                     logger.debug(
                                         f"unknown window toggle: {_toggle_key}"
                                     )
+                        case sfgui.GUICommandType.SetFishConfig:
+                            global fish_config
+                            fish_config = FishConfig.from_dict(com.data)
+                            # apply live to an in-flight session
+                            for c in walker.clients:
+                                fisher = getattr(c, "_fisher", None)
+                                if fisher is not None:
+                                    fisher.config = fish_config
                         case sfgui.GUICommandType.SetCombatVerboseLogs:
                             combat_handler._VERBOSE_LOG = bool(com.data)
                             settings.set_setting(

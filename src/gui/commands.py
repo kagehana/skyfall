@@ -171,6 +171,8 @@ class GUICommandType(Enum):
 
     LiveCombatRefresh = auto()
 
+    SetFishConfig = auto()
+
     Reboot = auto()
 
 
@@ -186,6 +188,8 @@ class GUIKeys:
     toggle_questing = "toggle_questing"
 
     toggle_auto_pet = "toggleautopet"
+
+    toggle_fishing = "togglefishing"
 
     toggle_auto_potion = "toggleautopotion"
 
