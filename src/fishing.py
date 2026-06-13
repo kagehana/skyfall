@@ -241,10 +241,24 @@ def _delete_fish_shellcode(fb: int, entry: int, template: int, size: float) -> b
     ])
 
 
-async def packet_trash_basket(client: Client) -> bool:
-    """Drain the Fish Basket via DeleteFish calls. Returns True iff the basket is
-    empty afterwards; False (resolve miss / nothing selected / no progress) tells
-    the caller to use the UI fallback."""
+async def packet_trash_basket(client: Client, *, poll: float = 0.02,
+                              settle: float = 0.5, refires: int = 3) -> bool:
+    """Drain the Fish Basket via DeleteFish calls — no UI.
+
+    Self-calibrating: the trash registers asynchronously (server round-trip), so
+    after each fire we poll finely for the count to drop and advance the instant
+    it does — the per-fish cadence becomes your real latency, not a guessed delay.
+    Self-healing: a fish whose drop doesn't land within ``settle`` is re-fired up
+    to ``refires`` times (a dropped packet recovers via packets, not the UI).
+
+    Returns True iff the basket emptied. False — resolve miss, nothing selected,
+    or a fish stuck past every re-fire — tells the caller to use the UI fallback,
+    which in practice should essentially never trigger.
+
+    poll    — drop-detection granularity (seconds).
+    settle  — max wait per fire before assuming the packet was dropped.
+    refires — extra DeleteFish sends for a stuck fish before ceding to UI.
+    """
     entry = _resolve_delete_fish(client)
     if entry is None:
         return False
@@ -255,6 +269,7 @@ async def packet_trash_basket(client: Client) -> bool:
     if not fb:
         return False
 
+    iters = max(1, int(settle / poll))
     hh = client.hook_handler
     cave = await hh.allocate(0x40)
     try:
@@ -272,20 +287,21 @@ async def packet_trash_basket(client: Client) -> bool:
             cf = await hh.read_typed(node + 16, Primitive.uint64)
             template = await hh.read_typed(cf + 0x48, Primitive.int32)
             size = await hh.read_typed(cf + 0x4C, Primitive.float32)
+            shellcode = _delete_fish_shellcode(fb, entry, template, size)
 
-            await hh.write_bytes(cave, _delete_fish_shellcode(fb, entry, template, size))
-            await hh.start_thread(cave)
-            # The trash registers asynchronously (server round-trip), so poll for
-            # the count to actually drop rather than trusting a fixed delay — a
-            # too-short wait reads the stale count and bails early.
-            dropped = False
-            for _ in range(400):  # 5ms poll, ~2s ceiling per fish
-                await asyncio.sleep(0.005)
-                if await hh.read_typed(fb + 0x78, Primitive.int32) < count:
-                    dropped = True
-                    break
-            if not dropped:
-                return False  # genuinely stalled -> UI fallback finishes it
+            progressed = False
+            for _ in range(refires + 1):
+                await hh.write_bytes(cave, shellcode)
+                await hh.start_thread(cave)
+                for _ in range(iters):
+                    await asyncio.sleep(poll)
+                    if await hh.read_typed(fb + 0x78, Primitive.int32) < count:
+                        progressed = True
+                        break
+                if progressed:
+                    break  # else re-fire — the previous send was likely dropped
+            if not progressed:
+                return False  # stuck past every re-fire -> UI fallback
     finally:
         await hh.free(cave)
 
@@ -405,15 +421,28 @@ class Fisher:
         await self._c.send_key(Keycode.V)
         await self._wait_for_window("Trash", timeout=5)
         if not self._exit() and await self._window_exists("Trash"):
+            # Packet drain self-calibrates to latency and re-fires stuck fish, so
+            # the UI loop is a genuine last resort (resolve miss / persistent stall).
             drained = False
             try:
                 drained = await packet_trash_basket(self._c)
             except Exception as e:
-                logger.warning(f"[Fishing] packet basket-trash failed ({e}); clicking")
-            if not drained:
+                logger.warning(f"[Fishing] packet basket-trash failed ({e})")
+            if not drained and not self._exit():
                 await self._click_trash_loop()
+        # Close the basket. Packet draining never touches the UI, so confirm the
+        # V toggle actually took and re-press once if basket chrome lingers.
+        # 'FishingHelp' is basket-only and visible only while the basket is open,
+        # so it can't false-positive into reopening a closed basket.
         if not self._exit():
             await self._c.send_key(Keycode.V)
+            for _ in range(int(1.5 / _POLL)):
+                if self._exit() or not await self._window_exists("FishingHelp"):
+                    break
+                await asyncio.sleep(_POLL)
+            else:
+                if not self._exit():
+                    await self._c.send_key(Keycode.V)
         self.stats["baskets_sold"] += 1
 
     async def _click_trash_loop(self):
