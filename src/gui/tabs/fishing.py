@@ -167,8 +167,10 @@ def build_fishing_tab(ctx):
 
     def _btn_style(active: bool) -> str:
         # mirrors ctx.btn_style (padding/radius/weight, app default font size),
-        # swapping the fill to a stop-red while a session is live
-        bg = "#c0563f" if active else accent
+        # swapping the fill to a clear "running" green while a session is live —
+        # matches the scraper's green=active recording indicator, so the toggled
+        # state reads as distinctly on rather than another accent-toned button
+        bg = "#2f9e5e" if active else accent
         return (
             f"QPushButton {{ background-color: {bg}; color: #ffffff; border: none;"
             " padding: 6px 14px; border-radius: 8px; font-weight: 600; }"

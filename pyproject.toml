@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "skyfall-wizard101"
-version = "2026.6.12"
+version = "2026.6.13"
 description = "Wizard101 automation engine — Lua-scripted, native combat, native navigation."
 license = "GPL-3.0-only"
 requires-python = ">=3.13"

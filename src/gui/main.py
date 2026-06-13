@@ -650,13 +650,13 @@ def manage_gui(
 
     fishing_tab = build_fishing_tab(ctx)
 
-    _add_nav_tab(svgs["hook"], "Fishing", fishing_tab)
+    _add_nav_tab(svgs["fish"], "Fishing", fishing_tab)
 
     ctx.current_tab_name = "Scripts"
 
     scripts_tab = build_scripts_tab(ctx)
 
-    _add_nav_tab(svgs["source"], "Scripts", scripts_tab)
+    _add_nav_tab(svgs["pencil"], "Scripts", scripts_tab)
 
     ctx.current_tab_name = "Scraper"
 

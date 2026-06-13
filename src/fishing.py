@@ -181,6 +181,10 @@ def fish_matches(
     return True
 
 
+# Stop fishing once the backpack is this full (used / max); the basket would
+# otherwise overflow and catches start failing.
+_BACKPACK_FULL = 0.98
+
 # ─────────────────────────── poll timings ───────────────────────
 _POLL = 0.005
 _AFTER_CLICK = 0.01
@@ -252,7 +256,13 @@ class Fisher:
             await self._c.mouse_handler.click_window_with_name(name)
 
     async def _fetch_fish_list(self, fishing_manager):
-        while not self._exit():
+        """Fetch the current fish list, tolerating transient RuntimeErrors
+        (e.g. no FishingWindow open yet / pond mid-refresh). Bounded so a
+        persistently-invalid pointer can't spin the bot forever — caller
+        treats an empty result the same as 'pond not ready'."""
+        for _ in range(20):  # ~200ms before giving up
+            if self._exit():
+                return []
             try:
                 return await fishing_manager.fish_list()
             except RuntimeError:
@@ -337,6 +347,7 @@ class Fisher:
                 try:
                     if len(await self._fetch_fish_list(fishing_manager)) > 0:
                         break
+                    await asyncio.sleep(_POLL)
                 except RuntimeError:
                     await asyncio.sleep(_RETRY)
             if self._exit():
@@ -350,6 +361,13 @@ class Fisher:
             return await self._c.current_energy()
         except Exception:
             return None
+
+    async def _backpack_full(self) -> bool:
+        try:
+            used, cap = await self._c.backpack_space()
+        except Exception:
+            return False
+        return cap > 0 and used / cap >= _BACKPACK_FULL
 
     def _record_catch(self, school: str, size: float, is_chest: bool):
         recent = self.stats["recent"]
@@ -382,6 +400,7 @@ class Fisher:
                 sub = await fish_windows[0].get_child_by_name("FishingSubWindow")
                 bottom = await sub.get_child_by_name("BottomFrame")
                 icon1 = await bottom.get_child_by_name("Icon1")
+
                 async with self._c.mouse_handler:
                     await self._c.mouse_handler.click_window(icon1)
 
@@ -401,6 +420,9 @@ class Fisher:
                                 break
                         except (RuntimeError, ValueError):
                             continue
+                    if not hooked:
+                        await asyncio.sleep(_POLL)
+
                 if self._exit():
                     break
                 if not hooked:
@@ -427,6 +449,9 @@ class Fisher:
                 self._emit()
 
                 if cfg.amount and self.stats["fish_caught"] >= cfg.amount:
+                    break
+                if await self._backpack_full():
+                    logger.info("[Fishing] backpack 98% full — stopping")
                     break
         except asyncio.CancelledError:
             raise

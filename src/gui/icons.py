@@ -148,6 +148,13 @@ def build_icons(stroke_color: str) -> dict[str, str]:
             '<path fill="none" d="M180,36L220,76L76,220H36V180L180,36Z"/>'
             '<path fill="none" d="M164,52L204,92"/>'
         ),
+        "fish": (
+            '<path fill="none" d="'
+            "M72,128C72,96,120,72,168,80C200,86,224,104,232,128"
+            'C224,152,200,170,168,176C120,184,72,160,72,128Z"/>'
+            '<path fill="none" d="M72,128L40,96L48,128L40,160Z"/>'
+            '<circle stroke="none" cx="196" cy="116" r="8"/>'
+        ),
         "folder": (
             '<path fill="none" d="'
             "M24,72Q24,56,40,56H96L120,80H216Q232,80,232,96V200"

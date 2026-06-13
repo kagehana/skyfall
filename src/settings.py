@@ -1,4 +1,6 @@
 import json
+import os
+import shutil
 
 
 from pathlib import Path
@@ -119,12 +121,62 @@ _INI_KEY_MAP = {
 
 _PROJECT_ROOT = Path(__file__).parent.parent
 
+APP_NAME = "SkyFall"
+
+
+def settings_dir() -> Path:
+    """Per-user config directory that survives version upgrades.
+
+    On Windows this is ``%APPDATA%\\SkyFall`` (e.g.
+    ``C:\\Users\\<user>\\AppData\\Roaming\\SkyFall``); elsewhere it falls
+    back to ``~/.config/SkyFall``. Unlike the directory next to the binary,
+    this is not replaced when the user downloads a new ``SkyFall.exe``.
+    """
+
+    base = os.environ.get("APPDATA")
+
+    if base:
+        return Path(base) / APP_NAME
+
+    return Path.home() / ".config" / APP_NAME
+
+
+def default_settings_path() -> Path:
+    """Resolve (and create) the persistent ``settings.json`` location.
+
+    Older builds stored ``settings.json`` next to the binary/source, where it
+    was lost whenever the user downloaded a new ``SkyFall.exe``. When such a
+    legacy file is present it is the live source of truth, so we promote it
+    into the AppData location (overwriting any older copy left there by an
+    even earlier version) and then retire the legacy file. After that AppData
+    is the single source of truth, so the migration runs exactly once.
+    """
+
+    directory = settings_dir()
+
+    directory.mkdir(parents=True, exist_ok=True)
+
+    path = directory / "settings.json"
+
+    legacy = _PROJECT_ROOT / "settings.json"
+
+    if legacy.exists():
+        try:
+            shutil.copy2(legacy, path)
+
+            legacy.unlink()
+
+        except OSError:
+            pass
+
+    return path
+
 
 class SkyFallSettings:
     def __init__(self, settings_path: str | None = None):
 
         if settings_path is None:
-            self._path = _PROJECT_ROOT / "settings.json"
+            self._path = default_settings_path()
 
         else:
             self._path = Path(settings_path)
