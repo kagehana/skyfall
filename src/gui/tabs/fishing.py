@@ -170,7 +170,7 @@ def build_fishing_tab(ctx):
         # swapping the fill to a clear "running" green while a session is live —
         # matches the scraper's green=active recording indicator, so the toggled
         # state reads as distinctly on rather than another accent-toned button
-        bg = "#2f9e5e" if active else accent
+        bg = "#2f9e5e" if active else ed.accent_of(ctx)
         return (
             f"QPushButton {{ background-color: {bg}; color: #ffffff; border: none;"
             " padding: 6px 14px; border-radius: 8px; font-weight: 600; }"
@@ -331,6 +331,10 @@ def build_fishing_tab(ctx):
     runtime_timer.timeout.connect(_tick)
     runtime_timer.start()
 
-    ctx.exports["fishing"] = {"ingest": _ingest}
+    def _retheme():
+        cfg_card.setStyleSheet(_input_style(ed.accent_of(ctx)))
+        start_btn.setStyleSheet(_btn_style(running[0]))
+
+    ctx.exports["fishing"] = {"ingest": _ingest, "retheme": _retheme}
 
     return tab

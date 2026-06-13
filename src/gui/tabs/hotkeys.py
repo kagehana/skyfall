@@ -578,13 +578,19 @@ def build_hotkeys_tab(ctx):
         " border-radius: 6px;"
         " padding: 2px 6px;"
     )
-    _ctrl_cb_style = (
-        f"QCheckBox {{ spacing: 6px; color: rgba(236,236,236,0.65); font-size: 8.3pt; }}"
-        f"QCheckBox::indicator {{ width: 14px; height: 14px;"
-        f" border: 1px solid rgba(255,255,255,0.15); border-radius: 3px;"
-        f" background: rgba(255,255,255,0.04); }}"
-        f"QCheckBox::indicator:checked {{ background: {accent}; border-color: {accent}; }}"
-    )
+    _ctrl_cbs: list[QCheckBox] = []
+
+    def _build_ctrl_cb_style():
+        a = ed.accent_of(ctx)
+        return (
+            "QCheckBox { spacing: 6px; color: rgba(236,236,236,0.65); font-size: 8.3pt; }"
+            "QCheckBox::indicator { width: 14px; height: 14px;"
+            " border: 1px solid rgba(255,255,255,0.15); border-radius: 3px;"
+            " background: rgba(255,255,255,0.04); }"
+            f"QCheckBox::indicator:checked {{ background: {a}; border-color: {a}; }}"
+        )
+
+    _ctrl_cb_style = _build_ctrl_cb_style()
     _sub_row_style = (
         "QWidget#subrow { border-radius: 4px; }"
         "QWidget#subrow:hover { background-color: rgba(255,255,255,0.03); }"
@@ -633,6 +639,7 @@ def build_hotkeys_tab(ctx):
         cb.setStyleSheet(_ctrl_cb_style)
         cb.setCursor(Qt.CursorShape.PointingHandCursor)
         cb.stateChanged.connect(lambda s, k=setting_key: _set_s(k, bool(s)))
+        _ctrl_cbs.append(cb)
         return cb
 
     # build all sub-controls upfront
@@ -702,6 +709,7 @@ def build_hotkeys_tab(ctx):
         _cb.setCursor(Qt.CursorShape.PointingHandCursor)
         _excl_layout.addWidget(_cb)
         _excl_cbs.append(_cb)
+        _ctrl_cbs.append(_cb)
 
     def _on_excl_toggled(_=None):
         _set_s(
@@ -1170,10 +1178,16 @@ def build_hotkeys_tab(ctx):
     _update_multi_client_state(0)
 
     def _retheme():
-        nonlocal _keycap_style
+        nonlocal _keycap_style, _ctrl_cb_style
         _keycap_style = _build_keycap_style()
         for btn in registry.key_labels.values():
             btn.setStyleSheet(_keycap_style)
+        _ctrl_cb_style = _build_ctrl_cb_style()
+        for cb in _ctrl_cbs:
+            try:
+                cb.setStyleSheet(_ctrl_cb_style)
+            except RuntimeError:
+                pass
         # refresh the active target segment's accent (matches dev-utils retheme)
         for b, t in _target_seg_btns:
             b.setStyleSheet(_seg_on_style() if t == get_target() else _seg_off_style)

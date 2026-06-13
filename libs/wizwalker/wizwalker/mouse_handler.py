@@ -36,7 +36,11 @@ class MouseHandler:
     def __init__(self, client: "wizwalker.Client"):
         self.client = client
         self.click_lock = None
-        self.click_predelay = 0.02
+        # Pre-button-down settle. set_mouse_position sends the WM_MOUSEMOVE via
+        # blocking SendMessageW, so the move is already processed by the time we
+        # get here — this is just a small safety margin, not a full move/click
+        # gap. Kept low to maximize click throughput.
+        self.click_predelay = 0.005
         # only for context managing
         self._ref_lock = None
         self._ref_count = 0
@@ -360,8 +364,10 @@ class MouseHandler:
                 button_down_sent = False
                 if _lg:
                     _lg.debug("click: UP sent")
-                # move mouse outside of client area
-                await self.set_mouse_position(-100, -100)
+                # move mouse outside of client area — cosmetic un-highlight only,
+                # nothing waits on it, so post it fire-and-forget instead of
+                # blocking on a SendMessageW round-trip per click
+                await self.set_mouse_position(-100, -100, use_post=True)
             finally:
                 # If we sent a button-down but never the matching button-up
                 # (cancel, exception, sleep interrupt), the game thinks the

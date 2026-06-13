@@ -18,14 +18,18 @@ CLAUDE.md if a future client update breaks fishing.
 from __future__ import annotations
 
 import asyncio
+import re
+import struct
 from dataclasses import asdict, dataclass
 from time import time
 from typing import Callable, Optional
 
+import pymem.process
 from loguru import logger
 
 from wizwalker import Client, Keycode
 from wizwalker.memory import MemoryReader
+from wizwalker.memory.memory_object import Primitive
 from wizwalker.memory.memory_objects.fish import FishStatusCode
 
 
@@ -164,6 +168,128 @@ async def restore_fishing_patches(client: Client, saved: list[tuple[int, bytes]]
     logger.info(f"[Fishing] restored {restored}/{len(saved)} patches")
 
 
+# ──────────────────── packet basket-trash ─────────────────────
+# Empty the Fish Basket by invoking the client's own DeleteFish via a remote
+# thread — no per-fish click+confirm. DeleteFish(rcx=FishingBehavior,
+# edx=template, xmm2=size) reads the *selected* fish's GID itself and sends
+# MSG_DELETEFISH; while the basket is open the client keeps a fish selected and
+# auto-advances after each trash, so repeating it drains the basket. We patch no
+# bytes — only call an existing function.
+#
+# IMPORTANT: the caller MUST have the basket UI open. The +0x70 list and the
+# +0x48 selection only populate while it's open; with it shut, count reads 0 and
+# this would no-op (leaving a full basket). _sell_basket opens it first.
+#
+# FishingBehavior layout: +0x48 selected rich-fish ptr (CoreObject, GID@+0x48),
+# +0x70 CaughtFish shared-list (template@+0x48 i32, size@+0x4C f32), +0x78 count.
+
+_DELETEFISH_ENTRY: dict[int, int | None] = {}  # pid -> entry addr (cache)
+# LEA r64,[rip+rel32] (REX.W{,R} 8D modrm mod=00 rm=101) — used to xref the
+# "MSG_DELETEFISH" string to the function that builds/sends the message.
+_LEA_RIP = re.compile(rb"[\x48\x49\x4c\x4d]\x8d[\x05\x0d\x15\x1d\x25\x2d\x35\x3d]")
+
+
+def _resolve_delete_fish(client: Client) -> int | None:
+    """DeleteFish entry, self-located via the MSG_DELETEFISH string xref then a
+    back-scan to the int3 padding before the function. Cached per process. Patch
+    fragile by nature — returns None on any miss so the caller can fall back."""
+    pid = client.process_id
+    if pid in _DELETEFISH_ENTRY:
+        return _DELETEFISH_ENTRY[pid]
+    entry = None
+    try:
+        pm = client._pymem
+        mod = pymem.process.module_from_name(pm.process_handle, _MODULE)
+        base = mod.lpBaseOfDll
+        data = pm.read_bytes(base, mod.SizeOfImage)
+        s = data.find(b"MSG_DELETEFISH\x00")
+        if s >= 0:
+            saddr = base + s
+            for m in _LEA_RIP.finditer(data):
+                i = m.start()
+                rel = int.from_bytes(data[i + 3:i + 7], "little", signed=True)
+                if base + i + 7 + rel == saddr:
+                    p = i
+                    while p > 0x1000 and not (data[p - 1] == 0xCC and data[p - 2] == 0xCC):
+                        p -= 1
+                    # Anti-crash guard: only accept it if the entry is the known
+                    # DeleteFish prologue (mov rax,rsp; push rbp/rsi/rdi/r14/r15).
+                    # A bad call address would crash the client, which the UI
+                    # fallback can't catch — so on any prologue drift, bail to None
+                    # and let the caller use clicks instead.
+                    if data[p:p + 10] == b"\x48\x8b\xc4\x55\x56\x57\x41\x56\x41\x57":
+                        entry = base + p
+                    break
+    except Exception as e:
+        logger.debug(f"[Fishing] DeleteFish resolve failed: {e}")
+    _DELETEFISH_ENTRY[pid] = entry
+    return entry
+
+
+def _delete_fish_shellcode(fb: int, entry: int, template: int, size: float) -> bytes:
+    sizebits = struct.unpack("<I", struct.pack("<f", size))[0]
+    return b"".join([
+        b"\x48\x83\xEC\x28",                          # sub rsp,0x28 (shadow+align)
+        b"\x48\xB9" + struct.pack("<Q", fb),          # mov rcx, FishingBehavior
+        b"\xBA" + struct.pack("<I", template & 0xFFFFFFFF),  # mov edx, template
+        b"\xB8" + struct.pack("<I", sizebits),        # mov eax, sizebits
+        b"\x66\x0F\x6E\xD0",                          # movd xmm2, eax
+        b"\x48\xB8" + struct.pack("<Q", entry),       # mov rax, DeleteFish
+        b"\xFF\xD0",                                  # call rax
+        b"\x48\x83\xC4\x28",                          # add rsp,0x28
+        b"\xC3",                                      # ret
+    ])
+
+
+async def packet_trash_basket(client: Client) -> bool:
+    """Drain the Fish Basket via DeleteFish calls. Returns True iff the basket is
+    empty afterwards; False (resolve miss / nothing selected / no progress) tells
+    the caller to use the UI fallback."""
+    entry = _resolve_delete_fish(client)
+    if entry is None:
+        return False
+    behavior = await client.client_object.search_behavior_by_name("FishingBehavior")
+    if not behavior:
+        return False
+    fb = await behavior.read_base_address()
+    if not fb:
+        return False
+
+    hh = client.hook_handler
+    cave = await hh.allocate(0x40)
+    try:
+        while True:
+            count = await hh.read_typed(fb + 0x78, Primitive.int32)
+            if count <= 0:
+                return True
+            sel = await hh.read_typed(fb + 0x48, Primitive.uint64)
+            if not (0x10000 < sel < 0x7FFFFFFFFFFF):
+                return False  # nothing selected (basket UI likely shut) -> fallback
+            # template/size are descriptive message fields only (the selected
+            # fish's GID is what gets deleted), so the first record's values work.
+            head = await hh.read_typed(fb + 0x70, Primitive.uint64)
+            node = await hh.read_typed(head, Primitive.uint64)
+            cf = await hh.read_typed(node + 16, Primitive.uint64)
+            template = await hh.read_typed(cf + 0x48, Primitive.int32)
+            size = await hh.read_typed(cf + 0x4C, Primitive.float32)
+
+            await hh.write_bytes(cave, _delete_fish_shellcode(fb, entry, template, size))
+            await hh.start_thread(cave)
+            # The trash registers asynchronously (server round-trip), so poll for
+            # the count to actually drop rather than trusting a fixed delay — a
+            # too-short wait reads the stale count and bails early.
+            dropped = False
+            for _ in range(400):  # 5ms poll, ~2s ceiling per fish
+                await asyncio.sleep(0.005)
+                if await hh.read_typed(fb + 0x78, Primitive.int32) < count:
+                    dropped = True
+                    break
+            if not dropped:
+                return False  # genuinely stalled -> UI fallback finishes it
+    finally:
+        await hh.free(cave)
+
+
 def fish_matches(
     cfg: FishConfig, *, is_chest: bool, school: str, rank: int, template_id: int, size: float
 ) -> bool:
@@ -272,7 +398,25 @@ class Fisher:
     async def _sell_basket(self):
         if self._exit():
             return
+        # Open the basket first: FishingBehavior's caught-fish list (+0x70) and
+        # the selected-fish ptr (+0x48) only populate while the basket UI is open,
+        # and DeleteFish needs both. Then drain via packets (no per-fish clicks),
+        # falling back to clicking if packets stall. Close the basket after.
         await self._c.send_key(Keycode.V)
+        await self._wait_for_window("Trash", timeout=5)
+        if not self._exit() and await self._window_exists("Trash"):
+            drained = False
+            try:
+                drained = await packet_trash_basket(self._c)
+            except Exception as e:
+                logger.warning(f"[Fishing] packet basket-trash failed ({e}); clicking")
+            if not drained:
+                await self._click_trash_loop()
+        if not self._exit():
+            await self._c.send_key(Keycode.V)
+        self.stats["baskets_sold"] += 1
+
+    async def _click_trash_loop(self):
         while await self._window_exists("Trash") and not self._exit():
             while not await self._window_exists("centerButton") and not self._exit():
                 try:
@@ -290,7 +434,6 @@ class Fisher:
                     await asyncio.sleep(_RETRY)
         if not self._exit():
             await self._c.send_key(Keycode.V)
-        self.stats["baskets_sold"] += 1
 
     async def _banish_config(self, fishing_manager) -> list:
         """Escape fish that don't match the config; return the kept ones.
